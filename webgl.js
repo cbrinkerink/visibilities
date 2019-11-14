@@ -1,12 +1,31 @@
 "use strict";
 
+/*
+ * TO IMPLEMENT:
+ * - movement of components. Parameters needed per component:
+ * - period, amplitude and absolute phase of horizontal motion
+ * - period, amplitude and absolute phase of vertical motion
+ * - period, amplitude and absolute phase of brightness variation
+ * - period, amplitude and absolute phase of sigma-x
+ * - period, amplitude and absolute phase of sigma-y
+ * - period, amplitude and absolute phase of PA
+ *
+ * - Polarisation of components. Parameters needed per component:
+ * - fractional polarisation degree (0..1)
+ * - PA of component polarisation
+ * - period, amplitude and absolute phase of polarisation degree (amp can be negative for flip)
+ * - period, amplitude and absolute phase of polarisation PA
+ * */
+
 // Variable that holds the locations of variables in the shader for us
 var lc;
 
 var currentLoc = new Float32Array([20.,50.,90.,130.,170.,200.,220.,270.,290.,330.]);
 var gl;
 var program;
-var fps, fpsInterval, now, then;
+var fps, fpsInterval, now, then, currentcounter;
+
+var keyMode = 0;
 
 var canvas;
 var width;
@@ -26,10 +45,21 @@ var w_pressed = false;
 var s_pressed = false;
 var a_pressed = false;
 var d_pressed = false;
+var q_pressed = false;
+var e_pressed = false;
+var r_pressed = false;
+var f_pressed = false;
+var t_pressed = false;
+var g_pressed = false;
+var y_pressed = false;
+var h_pressed = false;
+var b_pressed = false;
+var n_pressed = false;
 var z_pressed = false;
 var x_pressed = false;
 var c_pressed = false;
 var v_pressed = false;
+var j_pressed = false;
 var comma_pressed = false;
 var period_pressed = false;
 var minus_pressed = false;
@@ -39,58 +69,17 @@ var zero_pressed = false;
 var lambdasPerPixel = 5e8;
 var radiansPerPixel = 1e-6 * 1./3600. * Math.PI/180.;
 
-var sourcetypes = [
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0
-];
+var sourcetypes = [0,0,0,0,0,0,0,0,0,0];
 
 var xes = [
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel
   0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
 ];
 
 var yes = [
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel, 
-//  (Math.random() * 40. - 20.) * radiansPerPixel
   0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
 ];
 
 var xsigmas = [
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel
   50. * radiansPerPixel,
   50. * radiansPerPixel,
   50. * radiansPerPixel,
@@ -104,16 +93,6 @@ var xsigmas = [
 ];
 
 var ysigmas = [
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel, 
-//  (Math.random() * 100. + 10.) * radiansPerPixel
   50. * radiansPerPixel,
   50. * radiansPerPixel,
   50. * radiansPerPixel,
@@ -126,31 +105,26 @@ var ysigmas = [
   50. * radiansPerPixel
 ];
 
+// One array for all variable params for all source components.
+// order: ampx, periodx, phasex, ampy, periody, phasey, amp/period/phase brightness, a/p/p sigmax, a/p/p sigmay, a/p/p PA
+var variableparams = [
+  0., 5000., 0. * Math.PI/5., 0., 5000., 0. * Math.PI/5. + Math.PI/2., 0., 6000., 0., 0., 3000., Math.PI/3., 0., 2500., Math.PI/5., 0., 7000., Math.PI/7.,
+  0., 5000., 1. * Math.PI/5., 0., 5000., 1. * Math.PI/5. + Math.PI/2., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+  0., 5000., 2. * Math.PI/5., 0., 5000., 2. * Math.PI/5. + Math.PI/2., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+  0., 5000., 3. * Math.PI/5., 0., 5000., 3. * Math.PI/5. + Math.PI/2., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+  0., 5000., 4. * Math.PI/5., 0., 5000., 4. * Math.PI/5. + Math.PI/2., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+  0., 5000., 5. * Math.PI/5., 0., 5000., 5. * Math.PI/5. + Math.PI/2., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+  0., 5000., 6. * Math.PI/5., 0., 5000., 6. * Math.PI/5. + Math.PI/2., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+  0., 5000., 7. * Math.PI/5., 0., 5000., 7. * Math.PI/5. + Math.PI/2., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+  0., 5000., 8. * Math.PI/5., 0., 5000., 8. * Math.PI/5. + Math.PI/2., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+  0., 5000., 9. * Math.PI/5., 0., 5000., 9. * Math.PI/5. + Math.PI/2., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+];
+
 var thetas = [
-//  Math.random() * Math.PI, 
-//  Math.random() * Math.PI, 
-//  Math.random() * Math.PI, 
-//  Math.random() * Math.PI, 
-//  Math.random() * Math.PI, 
-//  Math.random() * Math.PI, 
-//  Math.random() * Math.PI, 
-//  Math.random() * Math.PI, 
-//  Math.random() * Math.PI, 
-//  Math.random() * Math.PI
   0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
 ];
 
 var strengths = [
-//  Math.random() * 0.5 + 0.1, 
-//  Math.random() * 0.5 + 0.1, 
-//  Math.random() * 0.5 + 0.1, 
-//  Math.random() * 0.5 + 0.1, 
-//  Math.random() * 0.5 + 0.1, 
-//  Math.random() * 0.5 + 0.1, 
-//  Math.random() * 0.5 + 0.1, 
-//  Math.random() * 0.5 + 0.1, 
-//  Math.random() * 0.5 + 0.1, 
-//  Math.random() * 0.5 + 0.1
   1.,0.,0.,0.,0.,0.,0.,0.,0.,0.
 ];
 
@@ -237,9 +211,61 @@ function keydown(e) {
   if (keyCode == 38) up_pressed    = true;
   if (keyCode == 40) down_pressed  = true;
   if (e.key == 'w') w_pressed      = true;
-  if (e.key == 'a') a_pressed      = true;
-  if (e.key == 's') s_pressed      = true;
-  if (e.key == 'd') d_pressed      = true;
+  if (e.key == 'a') {
+    a_pressed = true;
+    if (keyMode == 1) {
+      variableparams[18 * sel + 0] = 0.; // Set x amplitude to zero
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 2) {
+      variableparams[18 * sel + 9] = 0.; // Set sigma-x amplitude to zero
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 3) {
+      variableparams[18 * sel + 6] = 0.; // Set brightness amplitude to zero
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
+
+  }
+  if (e.key == 's') {
+    s_pressed  = true;
+    if (keyMode == 1) {
+      variableparams[18 * sel + 1] = 1000.; // Set x period to default value
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 2) {
+      variableparams[18 * sel + 10] = 1000.; // Set sigma-x period to default value
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 3) {
+      variableparams[18 * sel + 7] = 1000.; // Set brightness period to default value
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
+
+
+  }
+  if (e.key == 'd') {
+    d_pressed = true;
+    if (keyMode == 1) {
+      variableparams[18 * sel + 2] = 0.; // Set abs x phase to default value
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 2) {
+      variableparams[18 * sel + 11] = 0.; // Set sigma-x phase to default value
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 3) {
+      variableparams[18 * sel + 8] = 0.; // Set brightness phase to default value
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
+
+
+  }
+
+  if (e.key == 'e') e_pressed      = true;
   if (e.key == 'z') z_pressed      = true;
   if (e.key == 'x') x_pressed      = true;
   if (e.key == 'c') c_pressed      = true;
@@ -249,11 +275,14 @@ function keydown(e) {
   if (e.key == '-') minus_pressed  = true;
   if (e.key == '=') equals_pressed = true;
   if (e.key == 'q') {
-    sourcetypes[sel] = 1 - sourcetypes[sel];
-    gl.useProgram(program);
-    lc = gl.getUniformLocation(program, "sourcetypes");
-    gl.uniform1iv(lc, sourcetypes);
-    requestAnimationFrame(render);
+    q_pressed = true;
+    if (keyMode == 0) {
+      sourcetypes[sel] = 1 - sourcetypes[sel];
+      gl.useProgram(program);
+      lc = gl.getUniformLocation(program, "sourcetypes");
+      gl.uniform1iv(lc, sourcetypes);
+      requestAnimationFrame(render);
+    }
   }
   if (e.key == 'm') {
     xes[sel] = 0.;
@@ -266,63 +295,120 @@ function keydown(e) {
     requestAnimationFrame(render);
   }
   if (e.key == 'n') {
-    strengths[sel] = 1.;
-    gl.useProgram(program);
-    lc = gl.getUniformLocation(program, "strengths");
-    gl.uniform1fv(lc, strengths);
-    requestAnimationFrame(render);
+    n_pressed = true;
+    if (keyMode == 0) {
+      strengths[sel] = 1.;
+      gl.useProgram(program);
+      lc = gl.getUniformLocation(program, "strengths");
+      gl.uniform1fv(lc, strengths);
+      requestAnimationFrame(render);
+    }
   }
   if (e.key == 'b') {
-    xsigmas[sel] = 50. * radiansPerPixel;
-    ysigmas[sel] = 50. * radiansPerPixel;
-    gl.useProgram(program);
-    lc = gl.getUniformLocation(program, "xsigmas");
-    gl.uniform1fv(lc, xsigmas);
-    lc = gl.getUniformLocation(program, "ysigmas");
-    gl.uniform1fv(lc, ysigmas);
-    requestAnimationFrame(render);
+    b_pressed = true;
+    if (keyMode == 0) {
+      xsigmas[sel] = 50. * radiansPerPixel;
+      ysigmas[sel] = 50. * radiansPerPixel;
+      gl.useProgram(program);
+      lc = gl.getUniformLocation(program, "xsigmas");
+      gl.uniform1fv(lc, xsigmas);
+      lc = gl.getUniformLocation(program, "ysigmas");
+      gl.uniform1fv(lc, ysigmas);
+      requestAnimationFrame(render);
+    }
   }
   if (e.key == 'r') {
-    redBalance = redBalance + 0.1;
-    if (redBalance > 1.) redBalance = 1.;
-    gl.useProgram(program);
-    lc = gl.getUniformLocation(program, "redBalance");
-    gl.uniform1f(lc, redBalance);
+    r_pressed = true;
+    if (keyMode == 0) {
+      redBalance = redBalance + 0.1;
+      if (redBalance > 1.) redBalance = 1.;
+      gl.useProgram(program);
+      lc = gl.getUniformLocation(program, "redBalance");
+      gl.uniform1f(lc, redBalance);
+    }
   }
   if (e.key == 'f') {
-    redBalance = redBalance - 0.1;
-    if (redBalance < 0.5) redBalance = 0.5;
-    gl.useProgram(program);
-    lc = gl.getUniformLocation(program, "redBalance");
-    gl.uniform1f(lc, redBalance);
+    if (keyMode == 1) {
+      variableparams[18 * sel + 3] = 0.; // Set y-position dynamics amplitude to zero
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 0) { // lower red balance
+      redBalance = redBalance - 0.1;
+      if (redBalance < 0.5) redBalance = 0.5;
+      gl.useProgram(program);
+      lc = gl.getUniformLocation(program, "redBalance");
+      gl.uniform1f(lc, redBalance);
+    } else if (keyMode == 2) {  // Set sigma-y dynamics amplitude to zero
+      variableparams[18 * sel + 12] = 0.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 3) { // set PA dynamics amplitude to zero
+      variableparams[18 * sel + 15] = 0.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
   }
   if (e.key == 't') {
-    greenBalance = greenBalance + 0.1;
-    if (greenBalance > 1.) greenBalance = 1.;
-    gl.useProgram(program);
-    lc = gl.getUniformLocation(program, "greenBalance");
-    gl.uniform1f(lc, greenBalance);
+    t_pressed = true;
+    if (keyMode == 0) {
+      greenBalance = greenBalance + 0.1;
+      if (greenBalance > 1.) greenBalance = 1.;
+      gl.useProgram(program);
+      lc = gl.getUniformLocation(program, "greenBalance");
+      gl.uniform1f(lc, greenBalance);
+    }
   }
   if (e.key == 'g') {
-    greenBalance = greenBalance - 0.1;
-    if (greenBalance < 0.5) greenBalance = 0.5;
-    gl.useProgram(program);
-    lc = gl.getUniformLocation(program, "greenBalance");
-    gl.uniform1f(lc, greenBalance);
+    if (keyMode == 1) {
+      variableparams[18 * sel + 4] = 1000.; // Set y-position dynamics period to default value
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 0) { // lower green balance
+      greenBalance = greenBalance - 0.1;
+      if (greenBalance < 0.5) greenBalance = 0.5;
+      gl.useProgram(program);
+      lc = gl.getUniformLocation(program, "greenBalance");
+      gl.uniform1f(lc, greenBalance);
+    } else if (keyMode == 2) {
+      variableparams[18 * sel + 13] = 0.; // Set sigma-y dynamics period to default value
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 3) {
+      variableparams[18 * sel + 16] = 1000.; // Set PA dynamics period to default value
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
   }
   if (e.key == 'y') {
-    blueBalance = blueBalance + 0.1;
-    if (blueBalance > 1.) blueBalance = 1.;
-    gl.useProgram(program);
-    lc = gl.getUniformLocation(program, "blueBalance");
-    gl.uniform1f(lc, blueBalance);
+    y_pressed = true;
+    if (keyMode == 0) {
+      blueBalance = blueBalance + 0.1;
+      if (blueBalance > 1.) blueBalance = 1.;
+      gl.useProgram(program);
+      lc = gl.getUniformLocation(program, "blueBalance");
+      gl.uniform1f(lc, blueBalance);
+    }
   }
   if (e.key == 'h') {
-    blueBalance = blueBalance - 0.1;
-    if (blueBalance < 0.5) blueBalance = 0.5;
-    gl.useProgram(program);
-    lc = gl.getUniformLocation(program, "blueBalance");
-    gl.uniform1f(lc, blueBalance);
+    if (keyMode == 1) {
+      variableparams[18 * sel + 5] = 0.; // Set y-position dynamics phase to zero
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 0) {
+      blueBalance = blueBalance - 0.1;
+      if (blueBalance < 0.5) blueBalance = 0.5;
+      gl.useProgram(program);
+      lc = gl.getUniformLocation(program, "blueBalance");
+      gl.uniform1f(lc, blueBalance);
+    } else if (keyMode == 2) {
+      variableparams[18 * sel + 14] = 0.; // Set sigma-y dynamics phase to zero
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 3) {
+      variableparams[18 * sel + 17] = 0.; // Set PA dynamics phase to zero
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
   }
   if (e.key == 'u') {
     radiansPerPixel = radiansPerPixel/1.5;
@@ -370,6 +456,16 @@ function keydown(e) {
     lc = gl.getUniformLocation(program, "sel");
     gl.uniform1i(lc, sel);
     requestAnimationFrame(render);
+  }
+  if (e.key == 'j') {
+    keyMode = keyMode + 1;
+    if (keyMode > 3) keyMode = 0;
+    console.log("keyMode switched to ", keyMode);
+    // Set HTML text to appropriate mode!
+    if (keyMode == 0) document.getElementById("modetext").innerHTML = "Now in component placement/sizing mode";
+    if (keyMode == 1) document.getElementById("modetext").innerHTML = "Now in component position dynamics mode";
+    if (keyMode == 2) document.getElementById("modetext").innerHTML = "Now in component size dynamics mode mode";
+    if (keyMode == 3) document.getElementById("modetext").innerHTML = "Now in component brightness/angle dynamics mode";
   }
   if (e.key == 'k') {
     // Resize the canvas element
@@ -457,37 +553,138 @@ function checkInput() {
     gl.uniform1fv(lc, yes);
     requestAnimationFrame(render);
   }
+  if (q_pressed) {
+    if (keyMode == 1) { // increase x-position dynamics amplitude
+      variableparams[18 * sel + 0] = variableparams[18 * sel + 0] + radiansPerPixel;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 2) { // increase x-sigma dynamics amplitude
+      variableparams[18 * sel + 9] = variableparams[18 * sel + 9] + radiansPerPixel;
+      if (variableparams[18*sel+9] > (xsigmas[sel] - radiansPerPixel)) variableparams[18*sel+9] = xsigmas[sel] - radiansPerPixel;
+      if (variableparams[18*sel+9] < 0.) variableparams[18*sel+9] = 0.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 3) { // increase brightness dynamics amplitude
+      variableparams[18 * sel + 6] = variableparams[18 * sel + 6] + strengths[sel] * 0.01;
+      if (variableparams[18*sel+6] > (strengths[sel] - 0.01)) variableparams[18*sel+6] = strengths[sel] - 0.01;
+      if (variableparams[18*sel+6] < 0.) variableparams[18*sel+6] = 0.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
+  }
   if (w_pressed) {
-    ysigmas[sel] = ysigmas[sel] + 1. * radiansPerPixel;
-    if (ysigmas[sel] > windowSize * radiansPerPixel) ysigmas[sel] = windowSize * radiansPerPixel;
-    gl.useProgram(program);
-    lc = gl.getUniformLocation(program, "ysigmas");
-    gl.uniform1fv(lc, ysigmas);
+    if (keyMode == 0) { // increase y-sigma of component
+      ysigmas[sel] = ysigmas[sel] + 1. * radiansPerPixel;
+      if (ysigmas[sel] > windowSize * radiansPerPixel) ysigmas[sel] = windowSize * radiansPerPixel;
+      gl.useProgram(program);
+      lc = gl.getUniformLocation(program, "ysigmas");
+      gl.uniform1fv(lc, ysigmas);
+    } else if (keyMode == 1) { // increase x-position dynamics period
+      variableparams[18 * sel + 1] = variableparams[18 * sel + 1] + 100.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 2) { // increase x-sigma dynamics period
+      variableparams[18 * sel + 10] = variableparams[18 * sel + 10] + 100.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 3) { // increase brightness dynamics period
+      variableparams[18 * sel + 7] = variableparams[18 * sel + 7] + 100.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
     requestAnimationFrame(render);    
+  }
+  if (e_pressed) {
+    if (keyMode == 1) { // increase x-position dynamics phase
+      variableparams[18 * sel + 2] = variableparams[18 * sel + 2] + Math.PI/200.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 2) { // increase x-sigma dynamics phase
+      variableparams[18 * sel + 11] = variableparams[18 * sel + 11] + Math.PI/200.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 3) { // increase brightness dynamics phase
+      variableparams[18 * sel + 8] = variableparams[18 * sel + 8] + Math.PI/200.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
+  }
+  if (r_pressed) {
+    if (keyMode == 1) { // change y position dynamics amplitude
+      variableparams[18 * sel + 3] = variableparams[18 * sel + 3] + radiansPerPixel;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 2) { // Change y-sigma dynamics amplitude
+      variableparams[18 * sel + 12] = variableparams[18 * sel + 12] + radiansPerPixel;
+      if (variableparams[18*sel+12] > (ysigmas[sel] - radiansPerPixel)) variableparams[18*sel+12] = ysigmas[sel] - radiansPerPixel;
+      if (variableparams[18*sel+12] < 0.) variableparams[18*sel+12] = 0.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 3) { // change PA dynamics amplitude
+      variableparams[18 * sel + 15] = variableparams[18 * sel + 15] + Math.PI/200.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
+  }
+  if (t_pressed) {
+    if (keyMode == 1) { // increase y-position dynamics period
+      variableparams[18 * sel + 4] = variableparams[18 * sel + 4] + 100.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 2) { // increase y-sigma dynamics period
+      variableparams[18 * sel + 13] = variableparams[18 * sel + 13] + 100.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 3) { // increase PA dynamics period
+      variableparams[18 * sel + 16] = variableparams[18 * sel + 16] + 100.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
+  }
+  if (y_pressed) {
+    if (keyMode == 1) { // increase y-position dynamics phase
+      variableparams[18 * sel + 5] = variableparams[18 * sel + 5] + Math.PI/200.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 2) { // increase y-sigma dynamics phase
+      variableparams[18 * sel + 14] = variableparams[18 * sel + 14] + Math.PI/200.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 3) { // increase PA dynamics phase
+      variableparams[18 * sel + 17] = variableparams[18 * sel + 17] + Math.PI/200.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
   }
   if (s_pressed) {
-    ysigmas[sel] = ysigmas[sel] - 1. * radiansPerPixel;
-    if (ysigmas[sel] < 1. * radiansPerPixel) ysigmas[sel] = 1. * radiansPerPixel;
-    gl.useProgram(program);
-    lc = gl.getUniformLocation(program, "ysigmas");
-    gl.uniform1fv(lc, ysigmas);
-    requestAnimationFrame(render);    
+    if (keyMode == 0) { // decrease y-sigma of component
+      ysigmas[sel] = ysigmas[sel] - 1. * radiansPerPixel;
+      if (ysigmas[sel] < 1. * radiansPerPixel) ysigmas[sel] = 1. * radiansPerPixel;
+      gl.useProgram(program);
+      lc = gl.getUniformLocation(program, "ysigmas");
+      gl.uniform1fv(lc, ysigmas);
+      requestAnimationFrame(render);
+    }
   }
   if (d_pressed) {
-    xsigmas[sel] = xsigmas[sel] + 1. * radiansPerPixel;
-    if (xsigmas[sel] > windowSize * radiansPerPixel) xsigmas[sel] = windowSize * radiansPerPixel;
-    gl.useProgram(program);
-    lc = gl.getUniformLocation(program, "xsigmas");
-    gl.uniform1fv(lc, xsigmas);
-    requestAnimationFrame(render);    
+    if (keyMode == 0) { // increase x-sigma of component
+      xsigmas[sel] = xsigmas[sel] + 1. * radiansPerPixel;
+      if (xsigmas[sel] > windowSize * radiansPerPixel) xsigmas[sel] = windowSize * radiansPerPixel;
+      gl.useProgram(program);
+      lc = gl.getUniformLocation(program, "xsigmas");
+      gl.uniform1fv(lc, xsigmas);
+      requestAnimationFrame(render);
+    }
   }
   if (a_pressed) {
-    xsigmas[sel] = xsigmas[sel] - 1. * radiansPerPixel;
-    if (xsigmas[sel] < 1. * radiansPerPixel) xsigmas[sel] = 1. * radiansPerPixel;
-    gl.useProgram(program);
-    lc = gl.getUniformLocation(program, "xsigmas");
-    gl.uniform1fv(lc, xsigmas);
-    requestAnimationFrame(render);    
+    if (keyMode == 0) { // decrease x-sigma of component
+      xsigmas[sel] = xsigmas[sel] - 1. * radiansPerPixel;
+      if (xsigmas[sel] < 1. * radiansPerPixel) xsigmas[sel] = 1. * radiansPerPixel;
+      gl.useProgram(program);
+      lc = gl.getUniformLocation(program, "xsigmas");
+      gl.uniform1fv(lc, xsigmas);
+      requestAnimationFrame(render);
+    }
   }
   if (comma_pressed) {
     thetas[sel] = thetas[sel] - 0.01 * Math.PI;
@@ -506,35 +703,132 @@ function checkInput() {
     requestAnimationFrame(render); 
   }
   if (z_pressed) {
-    strengths[sel] = strengths[sel] - 0.01;
-    if (strengths[sel] < -5.) strengths[sel] = -5.;
-    gl.useProgram(program);
-    lc = gl.getUniformLocation(program, "strengths");
-    gl.uniform1fv(lc, strengths);
+    if (keyMode == 0) { // decrease component strength
+      strengths[sel] = strengths[sel] - 0.01;
+      if (strengths[sel] < -5.) strengths[sel] = -5.;
+      gl.useProgram(program);
+      lc = gl.getUniformLocation(program, "strengths");
+      gl.uniform1fv(lc, strengths);
+    } else if (keyMode == 1) { // decrease x-position dynamics amplitude
+      variableparams[18 * sel + 0] = variableparams[18 * sel + 0] - radiansPerPixel;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 2) { // decrease x-sigma dynamics amplitude
+      variableparams[18 * sel + 9] = variableparams[18 * sel + 9] - radiansPerPixel;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 3) { // decrease brightness dynamics amplitude
+      variableparams[18 * sel + 6] = variableparams[18 * sel + 6] - strengths[sel] * 0.01;
+      if (variableparams[18*sel+9] < 0.) variableparams[18*sel+9] = 0.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
     requestAnimationFrame(render);
   }
   if (x_pressed) {
-    strengths[sel] = strengths[sel] + 0.01;
-    if (strengths[sel] > 5.) strengths[sel] = 5.;
-    gl.useProgram(program);
-    lc = gl.getUniformLocation(program, "strengths");
-    gl.uniform1fv(lc, strengths);
+    if (keyMode == 0) { // increase component strength
+      strengths[sel] = strengths[sel] + 0.01;
+      if (strengths[sel] > 5.) strengths[sel] = 5.;
+      gl.useProgram(program);
+      lc = gl.getUniformLocation(program, "strengths");
+      gl.uniform1fv(lc, strengths);
+    } else if (keyMode == 1) { // decrease x-position dynamics period
+      variableparams[18 * sel + 1] = variableparams[18 * sel + 1] - 100.;
+      if (variableparams[18 * sel + 1] < 100.) variableparams[18 * sel + 1] = 100.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 2) { // decrease x-sigma dynamics period
+      variableparams[18 * sel + 10] = variableparams[18 * sel + 10] - 100.;
+      if (variableparams[18 * sel + 10] < 100.) variableparams[18 * sel + 10] = 100.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 3) { // decrease brightness dynamics period
+      variableparams[18 * sel + 7] = variableparams[18 * sel + 7] - 100.;
+      if (variableparams[18 * sel + 7] < 100.) variableparams[18 * sel + 7] = 100.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
     requestAnimationFrame(render);
   }
   if (c_pressed) {
-    imagestrength = imagestrength/1.1;
-    gl.useProgram(program);
-    lc = gl.getUniformLocation(program, "imagestrength");
-    gl.uniform1f(lc, imagestrength);
+    if (keyMode == 0) { // Lower image brightness
+      imagestrength = imagestrength/1.1;
+      gl.useProgram(program);
+      lc = gl.getUniformLocation(program, "imagestrength");
+      gl.uniform1f(lc, imagestrength);
+    } else if (keyMode == 1) { // decrease x-position dynamice phase
+      variableparams[18 * sel + 2] = variableparams[18 * sel + 2] - Math.PI/200.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }  else if (keyMode == 2) { // decrease x-sigma dynamics phase
+      variableparams[18 * sel + 11] = variableparams[18 * sel + 11] - Math.PI/200.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }  else if (keyMode == 3) { // decrease brightness dynamics phase
+      variableparams[18 * sel + 8] = variableparams[18 * sel + 8] - Math.PI/200.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
     requestAnimationFrame(render);
   }
   if (v_pressed) {
-    imagestrength = imagestrength*1.1;
-    gl.useProgram(program);
-    lc = gl.getUniformLocation(program, "imagestrength");
-    gl.uniform1f(lc, imagestrength);
+    if (keyMode == 0) { // Increase image brightness
+      imagestrength = imagestrength*1.1;
+      gl.useProgram(program);
+      lc = gl.getUniformLocation(program, "imagestrength");
+      gl.uniform1f(lc, imagestrength);
+    } else if (keyMode == 1) { // decrease y-position dynamics amplitude
+      variableparams[18 * sel + 3] = variableparams[18 * sel + 3] - radiansPerPixel;
+      if (variableparams[18 * sel + 3] < 0.) variableparams[18 * sel + 3] = 0.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 2) { // decrease y-sigma dynamics amplitude
+      variableparams[18 * sel + 12] = variableparams[18 * sel + 12] - radiansPerPixel;
+      if (variableparams[18 * sel + 12] < 0.) variableparams[18 * sel + 12] = 0.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 3) { // decrease PA dynamics amplitude
+      variableparams[18 * sel + 15] = variableparams[18 * sel + 15] - Math.PI/200.;
+      if (variableparams[18 * sel + 15] < 0.) variableparams[18 * sel + 15] = 0.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
     requestAnimationFrame(render);
   }
+  if (b_pressed) {
+    if (keyMode == 1) { // decrease y-position dynamics period
+      variableparams[18 * sel + 4] = variableparams[18 * sel + 4] - 100.;
+      if (variableparams[18 * sel + 4] < 100.) variableparams[18 * sel + 4] = 100.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 2) { // decrease y-sigma dynamics period
+      variableparams[18 * sel + 13] = variableparams[18 * sel + 13] - 100.;
+      if (variableparams[18 * sel + 13] < 100.) variableparams[18 * sel + 13] = 100.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 3) { // decrease PA dynamics period
+      variableparams[18 * sel + 16] = variableparams[18 * sel + 16] - 100.;
+      if (variableparams[18 * sel + 16] < 100.) variableparams[18 * sel + 16] = 100.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
+  }
+  if (n_pressed) {
+    if (keyMode == 1) { // decrease y-position dynamics phase
+      variableparams[18 * sel + 5] = variableparams[18 * sel + 5] - Math.PI/200.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 2) { // decrease y-sigma dynamics phase
+      variableparams[18 * sel + 14] = variableparams[18 * sel + 14] - Math.PI/200.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    } else if (keyMode == 3) { // decrease PA dynamics phase
+      variableparams[18 * sel + 17] = variableparams[18 * sel + 17] - Math.PI/200.;
+      lc = gl.getUniformLocation(program, "vps");
+      gl.uniform1fv(lc, variableparams);
+    }
+  }
+
   if (minus_pressed) {
     fourierstrength = fourierstrength/1.1;
     gl.useProgram(program);
@@ -569,16 +863,33 @@ function keyup(e) {
   if (e.key == '.') period_pressed = false;
   if (e.key == '-') minus_pressed  = false;
   if (e.key == '=') equals_pressed = false;
+
+  if (e.key == 'q') q_pressed      = false;
+  if (e.key == 'e') e_pressed      = false;
+  if (e.key == 'r') r_pressed      = false;
+  if (e.key == 't') t_pressed      = false;
+  if (e.key == 'y') y_pressed      = false;
+  if (e.key == 'f') f_pressed      = false;
+  if (e.key == 'g') g_pressed      = false;
+  if (e.key == 'h') h_pressed      = false;
+  if (e.key == 'b') b_pressed      = false;
+  if (e.key == 'n') n_pressed      = false;
 }
 
 function render() {
   now = Date.now();
+  setTimeout(function(){
   if (now - then > fpsInterval) {
+    currentcounter = currentcounter + (now - then);
     then = now;
     checkInput();
+    // Set time in shader to now
+    lc = gl.getUniformLocation(program, "time");
+    gl.uniform1f(lc, currentcounter);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
   requestAnimationFrame(render);
+  }, fpsInterval);
 }
 
 function main() {
@@ -591,6 +902,8 @@ function main() {
 
   fps = 90.;
   fpsInterval = 1000 / fps;
+
+  currentcounter = 0.;
 
   // Add key press event listener
   document.body.addEventListener("keydown", keydown, false);
@@ -617,6 +930,10 @@ function main() {
   // Make sure that we are using the right program first.
   gl.useProgram(program);
 
+  // Set start time for shader
+  lc = gl.getUniformLocation(program, "time");
+  gl.uniform1f(lc, currentcounter);
+
   lc = gl.getUniformLocation(program, "resolution");
   gl.uniform2f(lc, width, height);
 
@@ -637,6 +954,9 @@ function main() {
 
   lc = gl.getUniformLocation(program, "thetas");
   gl.uniform1fv(lc, thetas);
+
+  lc = gl.getUniformLocation(program, "vps");
+  gl.uniform1fv(lc, variableparams);
 
   lc = gl.getUniformLocation(program, "strengths");
   gl.uniform1fv(lc, strengths);
@@ -670,6 +990,10 @@ function main() {
 
   lc = gl.getUniformLocation(program, "uvpoints");
   gl.uniform1fv(lc, uvs);
+
+  // Set our test vector array with some values
+  lc = gl.getUniformLocation(program, "testvec");
+  gl.uniform2fv(lc, [0., 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875]);
 
   // lookup uniforms
   var matrixLocation = gl.getUniformLocation(program, "u_matrix");

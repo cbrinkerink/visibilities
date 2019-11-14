@@ -1,4 +1,15 @@
 <html>
+<!--
+Things to do:
+- Finish up edit modes: one mode for position/size (x/y, sigma, brightness, PA), one mode for x/y dynamics, one mode for size dynamics, one mode for brightness and angle dynamics.
+- Add sliders using javascript with their respective text explanations. Their function may shift depending on the active mode in the canvas.
+- Add mouse controls for the javascript canvas. click, click-n-drag, right click, right click-n-drag? What should they do?
+- Add ability to make a visibility plot for a given baseline
+- Add ability to make a closure phase plot for a given triangle
+- Add ability to make a closure amplitude plot for a given quadrangle
+- How to present plots? Stationary baseline, or with evolvong baseline?
+- How to manage stations in HTML interface?
+-->
 <title>A simple visibility simulation</title>
 <body>
 <h1>A simple visibility simulation</h1>
@@ -10,6 +21,7 @@
 
 <p>For a list of all controls, see bottom of page.</p>
 <canvas id="canvas" width="1200" height="600"></canvas>
+<p id="modetext">Now in component placement/sizing mode</p>
 
 <!-- vertex shader -->
 <script id="2d-vertex-shader" type="x-shader/x-vertex">#version 300 es
@@ -36,6 +48,8 @@ precision mediump int;
 
 #define PI 3.1415926536
 
+uniform float time;
+
 uniform vec2 resolution;
 uniform int sourcetypes[10];
 uniform float xes[10];
@@ -44,6 +58,9 @@ uniform float xsigmas[10];
 uniform float ysigmas[10];
 uniform float thetas[10];
 uniform float strengths[10];
+
+uniform float vps[180];
+
 uniform float scale;
 uniform float fourierstrength;
 uniform float imagestrength;
@@ -56,6 +73,9 @@ uniform float greenBalance;
 uniform float blueBalance;
 
 uniform float uvpoints[20];
+
+// test object to check how arrays of vectors work
+uniform vec2 testvec[4];
 
 out vec4 fragColor;
 
@@ -115,20 +135,34 @@ void main() {
   if (pos.x < 1.) {
     // Image plane
     for (int i = 0; i < 10; i++) {
+      float posx = xes[i] + vps[18*i]   * sin(time * 2. * PI/ vps[18*i+1] + vps[18*i+2]);
+      float posy = yes[i] + vps[18*i+3] * sin(time * 2. * PI/ vps[18*i+1] + vps[18*i+5]);
+      float currentstrength = strengths[i] + vps[18*i+6] * sin(time * 2. * PI/ vps[18*i+7] + vps[18*i+8]);
+      float currentxsigma = xsigmas[i] + vps[18*i+9] * sin(time * 2. * PI/ vps[18*i+10] + vps[18*i+11]);
+      float currentysigma = ysigmas[i] + vps[18*i+12] * sin(time * 2. * PI/ vps[18*i+13] + vps[18*i+14]);
+      float currenttheta = thetas[i] + vps[18*i+15] * sin(time * 2. * PI/ vps[18*i+16] + vps[18*i+17]);
       if (sourcetypes[i] == 0) { // Gaussian
-        float a = cos(thetas[i]) * cos(thetas[i]) / (2. * xsigmas[i] * xsigmas[i]) + sin(thetas[i]) * sin(thetas[i]) / (2. * ysigmas[i] * ysigmas[i]);
-        float b = -sin(2. * thetas[i]) / (4. * xsigmas[i] * xsigmas[i]) + sin(2. * thetas[i]) / (4. * ysigmas[i] * ysigmas[i]);
-        float c = sin(thetas[i]) * sin(thetas[i]) / (2. * xsigmas[i] * xsigmas[i]) + cos(thetas[i]) * cos(thetas[i]) / (2. * ysigmas[i] * ysigmas[i]);
-        float val = imagestrength * strengths[i] * exp(-(a * (rpp * scale * pos.x - xes[i])*(rpp * scale * pos.x - xes[i]) + 2. * b * (rpp * scale * pos.x - xes[i]) * (rpp * scale * pos.y - yes[i]) + c * (rpp * scale * pos.y - yes[i]) * (rpp * scale * pos.y - yes[i])));
+        float a = cos(currenttheta) * cos(currenttheta) / (2. * currentxsigma * currentxsigma) + sin(currenttheta) * sin(currenttheta) / (2. * currentysigma * currentysigma);
+        float b = -sin(2. * currenttheta) / (4. * currentxsigma * currentxsigma) + sin(2. * currenttheta) / (4. * currentysigma * currentysigma);
+        float c = sin(currenttheta) * sin(currenttheta) / (2. * currentxsigma * currentxsigma) + cos(currenttheta) * cos(currenttheta) / (2. * currentysigma * currentysigma);
+        float val = imagestrength * currentstrength * exp(-(a * (rpp * scale * pos.x - posx) * 
+	                                                        (rpp * scale * pos.x - posx) +
+					               2. * b * (rpp * scale * pos.x - posx) * 
+						                (rpp * scale * pos.y - posy) + 
+						            c * (rpp * scale * pos.y - posy) * 
+						      	        (rpp * scale * pos.y - posy)));
         col.x = col.x + val;
-        col.y = col.y + val;
+        if (i != sel) col.y = col.y + val;
         col.z = col.z + val;
       } else if (sourcetypes[i] == 1) { // Disk
-        float dist = sqrt((rpp * scale * pos.x - xes[i]) * (rpp * scale * pos.x - xes[i]) + (rpp * scale * pos.y - yes[i]) * (rpp * scale * pos.y - yes[i]));
+        float dist = sqrt((rpp * scale * pos.x - posx) * 
+	                  (rpp * scale * pos.x - posx) + 
+			  (rpp * scale * pos.y - posy) * 
+			  (rpp * scale * pos.y - posy));
         float val = 0.;
-        if (dist < xsigmas[i]) val = imagestrength * strengths[i];
+        if (dist < currentxsigma) val = imagestrength * currentstrength;
         col.x = col.x + val;
-        col.y = col.y + val;
+        if (i != sel) col.y = col.y + val;
         col.z = col.z + val;
       }
     }
@@ -136,7 +170,7 @@ void main() {
     {
       col = vec4(1.,0.,0.,1.);
     } else {
-      col = clamp(col, 0.0, 1.0);
+      col = clamp(col, vec4(0.0), vec4(1.0));
     }
     fragColor = col;
   } else {
@@ -149,28 +183,33 @@ void main() {
     float green = 0.;
     float blue = 0.;
     for (int i = 0; i < 10; i++) {
+      float posx = xes[i] + vps[18*i]   * sin(time * 2. * PI/ vps[18*i+1] + vps[18*i+2]);
+      float posy = yes[i] + vps[18*i+3] * sin(time * 2. * PI/ vps[18*i+1] + vps[18*i+5]);
+      float currentstrength = strengths[i] + vps[18*i+6] * sin(time * 2. * PI/ vps[18*i+7] + vps[18*i+8]);
+      float currentxsigma = xsigmas[i] + vps[18*i+9] * sin(time * 2. * PI/ vps[18*i+10] + vps[18*i+11]);
+      float currentysigma = ysigmas[i] + vps[18*i+12] * sin(time * 2. * PI/ vps[18*i+13] + vps[18*i+14]);
+      float currenttheta = thetas[i] + vps[18*i+15] * sin(time * 2. * PI/ vps[18*i+16] + vps[18*i+17]);
       if (sourcetypes[i] == 0) { // Gaussian
-        float sigma_x = PI * PI / (xsigmas[i] * lpp);
-        float sigma_y = PI * PI / (ysigmas[i] * lpp);
-        float a = cos(thetas[i]) * cos(thetas[i]) / (2. * sigma_x * sigma_x) + sin(thetas[i]) * sin(thetas[i]) / (2. * sigma_y * sigma_y);
-        float b = -sin(2. * thetas[i]) / (4. * sigma_x * sigma_x) + sin(2. * thetas[i]) / (4. * sigma_y * sigma_y);
-        float c = sin(thetas[i]) * sin(thetas[i]) / (2. * sigma_x * sigma_x) + cos(thetas[i]) * cos(thetas[i]) / (2. * sigma_y * sigma_y);
-        phasenew = -PI * ((gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * lpp * (xes[i]) + 
-                          (gl_FragCoord.y - (resolution.y - 1.)/2.               ) * lpp * (yes[i]));
+        float sigma_x = PI * PI / (currentxsigma * lpp);
+        float sigma_y = PI * PI / (currentysigma * lpp);
+        float a = cos(currenttheta) * cos(currenttheta) / (2. * sigma_x * sigma_x) + sin(currenttheta) * sin(currenttheta) / (2. * sigma_y * sigma_y);
+        float b = -sin(2. * currenttheta) / (4. * sigma_x * sigma_x) + sin(2. * currenttheta) / (4. * sigma_y * sigma_y);
+        float c = sin(currenttheta) * sin(currenttheta) / (2. * sigma_x * sigma_x) + cos(currenttheta) * cos(currenttheta) / (2. * sigma_y * sigma_y);
+        phasenew = -PI * ((gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * lpp * posx + 
+                          (gl_FragCoord.y - (resolution.y - 1.)/2.               ) * lpp * posy);
         phasenew = mod(phasenew, 2. * PI);
-        //ampnew = fourierstrength * (PI / sqrt(xsigmas[i] * ysigmas[i]) * strengths[i] * exp(-(a * (gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y)*(gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) + 2. * b * (gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * (gl_FragCoord.y - (resolution.y - 1.)/2.) + c * (gl_FragCoord.y - (resolution.y - 1.)/2.) * (gl_FragCoord.y - (resolution.y - 1.)/2.))));
-          // Gaussian source type
-          // Version where we invert the sigmax and sigmay for amplitude scaling:
-          ampnew = fourierstrength * (PI * (xsigmas[i] * ysigmas[i]) * strengths[i] * exp(-(a * (gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y)*(gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) + 2. * b * (gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * (gl_FragCoord.y - (resolution.y - 1.)/2.) + c * (gl_FragCoord.y - (resolution.y - 1.)/2.) * (gl_FragCoord.y - (resolution.y - 1.)/2.))));
+        // Gaussian source type
+        // Version where we invert the sigmax and sigmay for amplitude scaling:
+        ampnew = fourierstrength * (PI * (currentxsigma * currentysigma) * currentstrength * exp(-(a * (gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y)*(gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) + 2. * b * (gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * (gl_FragCoord.y - (resolution.y - 1.)/2.) + c * (gl_FragCoord.y - (resolution.y - 1.)/2.) * (gl_FragCoord.y - (resolution.y - 1.)/2.))));
       } else if (sourcetypes[i] == 1) { // Disk
-        phasenew = -PI * ((gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * lpp * (xes[i]) + 
-                          (gl_FragCoord.y - (resolution.y - 1.)/2.               ) * lpp * (yes[i]));
+        phasenew = -PI * ((gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * lpp * posx + 
+                          (gl_FragCoord.y - (resolution.y - 1.)/2.               ) * lpp * posy);
         phasenew = mod(phasenew, 2. * PI);
         float radius = lpp * sqrt((gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * (gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) + 
                                   (gl_FragCoord.y - (resolution.y - 1.)/2.) * (gl_FragCoord.y - (resolution.y - 1.)/2.));
-	float br = bessel(xsigmas[i] * radius, 1) / (xsigmas[i] * radius);
+	float br = bessel(currentxsigma * radius, 1) / (currentxsigma * radius);
 	if (radius < 1e-1) br = 0.5;
-        ampnew = strengths[i] * fourierstrength * 2. * PI * xsigmas[i] * xsigmas[i] * br;
+        ampnew = currentstrength * fourierstrength * 2. * PI * currentxsigma * currentxsigma * br;
       }
       real = real + cos(phasenew) * ampnew;
       imag = imag + sin(phasenew) * ampnew;
@@ -193,6 +232,11 @@ void main() {
   if (gl_FragCoord.y < 1. && gl_FragCoord.x < resolution.y/10. * float(sel+1) && gl_FragCoord.x > resolution.y/10. * float(sel)) {
     fragColor = vec4(0.0, 1.0, 0.0, 1.0);
   }
+  // Test our vector array here
+  //if (gl_FragCoord.y > (resolution.y - 10.)) {
+  //  fragColor = vec4(vec3(testvec[int(4. * gl_FragCoord.x / resolution.x)].x),1.);
+    //fragColor = vec4(1.,0.,0.,1.);
+  //}
 }
 </script>
 

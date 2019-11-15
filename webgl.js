@@ -412,24 +412,32 @@ function keydown(e) {
   }
   if (e.key == 'u') {
     radiansPerPixel = radiansPerPixel/1.5;
+    var fov = height * radiansPerPixel * 180./Math.PI * 3600. * 1e6;
+    document.getElementById("fov").innerHTML = "Field of view: " + fov.toString() + " microarcseconds";
     gl.useProgram(program);
     lc = gl.getUniformLocation(program, "rpp");
     gl.uniform1f(lc, radiansPerPixel);
   }
   if (e.key == 'i') {
     radiansPerPixel = radiansPerPixel*1.5;
+    var fov = height * radiansPerPixel * 180./Math.PI * 3600. * 1e6;
+    document.getElementById("fov").innerHTML = "Field of view: " + fov.toString() + " microarcseconds";
     gl.useProgram(program);
     lc = gl.getUniformLocation(program, "rpp");
     gl.uniform1f(lc, radiansPerPixel);
   }
   if (e.key == 'o') {
     lambdasPerPixel = lambdasPerPixel/1.5;
+    var uvsize = height * lambdasPerPixel;
+    document.getElementById("uvsize").innerHTML = "UV plane extent: " + uvsize.toString() + " lambdas";
     gl.useProgram(program);
     lc = gl.getUniformLocation(program, "lpp");
     gl.uniform1f(lc, lambdasPerPixel);
   }
   if (e.key == 'p') {
     lambdasPerPixel = lambdasPerPixel*1.5;
+    var uvsize = height * lambdasPerPixel;
+    document.getElementById("uvsize").innerHTML = "UV plane extent: " + uvsize.toString() + " lambdas";
     gl.useProgram(program);
     lc = gl.getUniformLocation(program, "lpp");
     gl.uniform1f(lc, lambdasPerPixel);
@@ -462,10 +470,98 @@ function keydown(e) {
     if (keyMode > 3) keyMode = 0;
     console.log("keyMode switched to ", keyMode);
     // Set HTML text to appropriate mode!
-    if (keyMode == 0) document.getElementById("modetext").innerHTML = "Now in component placement/sizing mode";
-    if (keyMode == 1) document.getElementById("modetext").innerHTML = "Now in component position dynamics mode";
-    if (keyMode == 2) document.getElementById("modetext").innerHTML = "Now in component size dynamics mode mode";
-    if (keyMode == 3) document.getElementById("modetext").innerHTML = "Now in component brightness/angle dynamics mode";
+    if (keyMode == 0) {
+      document.getElementById("modetext").innerHTML = "Current mode: component placement/sizing";
+      document.getElementById("controls").innerHTML = "\
+        <h2>Controls</h2>\
+        <h3>single-press actions</h3>\
+        <p>[ and ] keys: cycle through all 10 components to select the active source component (the selected component is indicated by a thin green bar at the very bottom of the sky image that jumps left or right when you switch selections  - look carefully). There are 10 source components in total that can all be modified.</p>\
+        <p>q key: switch the type of the current source component between 2D Gaussian and circular disk. For the disk, only sigma-x is used to determine its size.</p>\
+        <p>m key: center active component in middle of sky image.</p>\
+        <p>n key: normalize strength of active component to 1.</p>\
+        <p>b key: set sigma-x and sigma-y of active component to 50 pixels.</p>\
+        <p>0 key: set strength of active component to zero.</p>\
+        <p>u and i keys: change zoom level of sky image.</p>\
+        <p>o and p keys: change zoom level of visibility map.</p>\
+        <p>f,g,h keys: darken the r,g,b components of the visibility phase colour map.</p>\
+        <p>r,t,y keys: brighten the r,g,b components of the visibility phase colour map.</p>\
+        <p>k and l keys: change the size of the displayed window to make it fit your screen.</p>\
+        \
+        <h3>Press-and-hold actions</h3>\
+        <p>Cursor keys: move active component across sky image.</p>\
+        <p>w,a,s,d keys: change sigma-x (a and d) and sigma-y (s and w) of the current component.</p>\
+        <p>comma and period keys: rotate the active component on the sky, if it is a Gaussian.</p>\
+        <p>z and x keys: change strength of active component. Strength can be negative so that flux can be subtracted from other elements. When sky flux density becomes negative anywhere, this is indicated with a red colour.</p>\
+        <p>c and v keys: change brightness scale of sky image.</p>\
+        <p>minus and equals keys: change brightness scale of visibility map.</p>\
+        ";
+    }
+    if (keyMode == 1) {
+      document.getElementById("modetext").innerHTML = "Current mode: component position dynamics";
+      document.getElementById("controls").innerHTML = "\
+        <h2>Controls</h2>\
+        <p>[ and ] keys: cycle through all 10 components to select the active source component (the selected component is indicated by a thin green bar at the very bottom of the sky image that jumps left or right when you switch selections  - look carefully). There are 10 source components in total that can all be modified.</p>\
+        <p>q,a,z keys: increase, set to zero, or decrease the amplitude of the x-motion of the currently selected component.</p>\
+        <p>w,s,x keys: increase, set to 1000, or decrease the period of the x-motion of the currently selected component.</p>\
+        <p>e,d,c keys: increase, set to zero, or decrease the phase of the x-motion of the currently selected component.</p>\
+        <p>r,f,v keys: increase, set to zero, or decrease the amplitude of the y-motion of the currently selected component.</p>\
+        <p>t,g,b keys: increase, set to 1000, or decrease the period of the y-motion of the currently selected component.</p>\
+        <p>y,h,n keys: increase, set to zero, or decrease the phase of the y-motion of the currently selected component.</p>\
+        <p>m key: center active component in middle of sky image.</p>\
+        <p>0 key: set strength of active component to zero.</p>\
+        <p>u and i keys: change zoom level of sky image.</p>\
+        <p>o and p keys: change zoom level of visibility map.</p>\
+        <p>k and l keys: change the size of the displayed window to make it fit your screen.</p>\
+        \
+        <p>Cursor keys: move active component across sky image.</p>\
+        <p>comma and period keys: rotate the active component on the sky, if it is a Gaussian.</p>\
+        <p>minus and equals keys: change brightness scale of visibility map.</p>\
+        ";
+    }
+    if (keyMode == 2) {
+      document.getElementById("modetext").innerHTML = "Current mode: component size dynamics";
+      document.getElementById("controls").innerHTML = "\
+        <h2>Controls</h2>\
+        <p>[ and ] keys: cycle through all 10 components to select the active source component (the selected component is indicated by a thin green bar at the very bottom of the sky image that jumps left or right when you switch selections  - look carefully). There are 10 source components in total that can all be modified.</p>\
+        <p>q,a,z keys: increase, set to zero, or decrease the amplitude of the x-size variation of the currently selected component.</p>\
+        <p>w,s,x keys: increase, set to 1000, or decrease the period of the x-size variation of the currently selected component.</p>\
+        <p>e,d,c keys: increase, set to zero, or decrease the phase of the x-size variation of the currently selected component.</p>\
+        <p>r,f,v keys: increase, set to zero, or decrease the amplitude of the y-size variation of the currently selected component.</p>\
+        <p>t,g,b keys: increase, set to 1000, or decrease the period of the y-size variation of the currently selected component.</p>\
+        <p>y,h,n keys: increase, set to zero, or decrease the phase of the y-size variation of the currently selected component.</p>\
+        <p>m key: center active component in middle of sky image.</p>\
+        <p>0 key: set strength of active component to zero.</p>\
+        <p>u and i keys: change zoom level of sky image.</p>\
+        <p>o and p keys: change zoom level of visibility map.</p>\
+        <p>k and l keys: change the size of the displayed window to make it fit your screen.</p>\
+        \
+        <p>Cursor keys: move active component across sky image.</p>\
+        <p>comma and period keys: rotate the active component on the sky, if it is a Gaussian.</p>\
+        <p>minus and equals keys: change brightness scale of visibility map.</p>\
+        ";
+    }
+    if (keyMode == 3) {
+      document.getElementById("modetext").innerHTML = "Current mode: component brightness/angle dynamics";
+      document.getElementById("controls").innerHTML = "\
+        <h2>Controls</h2>\
+        <p>[ and ] keys: cycle through all 10 components to select the active source component (the selected component is indicated by a thin green bar at the very bottom of the sky image that jumps left or right when you switch selections  - look carefully). There are 10 source components in total that can all be modified.</p>\
+        <p>q,a,z keys: increase, set to zero, or decrease the amplitude of the brightness variation of the currently selected component.</p>\
+        <p>w,s,x keys: increase, set to 1000, or decrease the period of the brightness variation of the currently selected component.</p>\
+        <p>e,d,c keys: increase, set to zero, or decrease the phase of the brightness variation of the currently selected component.</p>\
+        <p>r,f,v keys: increase, set to zero, or decrease the amplitude of the position angle variation of the currently selected component.</p>\
+        <p>t,g,b keys: increase, set to 1000, or decrease the period of the position angle variation of the currently selected component.</p>\
+        <p>y,h,n keys: increase, set to zero, or decrease the phase of the position angle variation of the currently selected component.</p>\
+        <p>m key: center active component in middle of sky image.</p>\
+        <p>0 key: set strength of active component to zero.</p>\
+        <p>u and i keys: change zoom level of sky image.</p>\
+        <p>o and p keys: change zoom level of visibility map.</p>\
+        <p>k and l keys: change the size of the displayed window to make it fit your screen.</p>\
+        \
+        <p>Cursor keys: move active component across sky image.</p>\
+        <p>comma and period keys: rotate the active component on the sky, if it is a Gaussian.</p>\
+        <p>minus and equals keys: change brightness scale of visibility map.</p>\
+        ";
+    }
   }
   if (e.key == 'k') {
     // Resize the canvas element
@@ -489,11 +585,11 @@ function keydown(e) {
       gl.uniform1f(lc, lambdasPerPixel);
       requestAnimationFrame(render);
     }
-    console.log("Actual canvas width = ", document.getElementById("canvas").width);
-    console.log("drawingBufferWidth = ", gl.drawingBufferWidth);
-    console.log("window.innerWidth = ", window.innerWidth);
-    console.log("gl.canvas.clientWidth = ", gl.canvas.clientWidth);
-    console.log("gl.canvas.width = ", gl.canvas.width);
+    //console.log("Actual canvas width = ", document.getElementById("canvas").width);
+    //console.log("drawingBufferWidth = ", gl.drawingBufferWidth);
+    //console.log("window.innerWidth = ", window.innerWidth);
+    //console.log("gl.canvas.clientWidth = ", gl.canvas.clientWidth);
+    //console.log("gl.canvas.width = ", gl.canvas.width);
   }
   if (e.key == 'l') {
     // Resize the canvas element
@@ -515,11 +611,11 @@ function keydown(e) {
     lc = gl.getUniformLocation(program, "lpp");
     gl.uniform1f(lc, lambdasPerPixel);
     requestAnimationFrame(render);
-    console.log("Actual canvas width = ", document.getElementById("canvas").width);
-    console.log("drawingBufferWidth = ", gl.drawingBufferWidth);
-    console.log("window.innerWidth = ", window.innerWidth);
-    console.log("gl.canvas.clientWidth = ", gl.canvas.clientWidth);
-    console.log("gl.canvas.width = ", gl.canvas.width);
+    //console.log("Actual canvas width = ", document.getElementById("canvas").width);
+    //console.log("drawingBufferWidth = ", gl.drawingBufferWidth);
+    //console.log("window.innerWidth = ", window.innerWidth);
+    //console.log("gl.canvas.clientWidth = ", gl.canvas.clientWidth);
+    //console.log("gl.canvas.width = ", gl.canvas.width);
   }
 }
 

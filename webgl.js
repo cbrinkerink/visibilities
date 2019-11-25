@@ -20,6 +20,11 @@
 // Variable that holds the locations of variables in the shader for us
 var lc;
 
+// Keep track of whether the mouse button is down
+var l_mouse_is_down = false;
+var r_mouse_is_down = false;
+var mousestart_x, mousestart_y, mouseend_x, mouseend_y, mousemoved_x, mousemoved_y, mouse_dragging;
+
 var currentLoc = new Float32Array([20.,50.,90.,130.,170.,200.,220.,270.,290.,330.]);
 var gl;
 var program;
@@ -27,7 +32,7 @@ var fps, fpsInterval, now, then, currentcounter;
 
 var keyMode = 0;
 
-var canvas;
+var canvas, textcanvas, ctx;
 var width;
 var height;
 
@@ -413,7 +418,6 @@ function keydown(e) {
   if (e.key == 'u') {
     radiansPerPixel = radiansPerPixel/1.5;
     var fov = height * radiansPerPixel * 180./Math.PI * 3600. * 1e6;
-    document.getElementById("fov").innerHTML = "Field of view: " + fov.toString() + " microarcseconds";
     gl.useProgram(program);
     lc = gl.getUniformLocation(program, "rpp");
     gl.uniform1f(lc, radiansPerPixel);
@@ -421,7 +425,6 @@ function keydown(e) {
   if (e.key == 'i') {
     radiansPerPixel = radiansPerPixel*1.5;
     var fov = height * radiansPerPixel * 180./Math.PI * 3600. * 1e6;
-    document.getElementById("fov").innerHTML = "Field of view: " + fov.toString() + " microarcseconds";
     gl.useProgram(program);
     lc = gl.getUniformLocation(program, "rpp");
     gl.uniform1f(lc, radiansPerPixel);
@@ -429,7 +432,6 @@ function keydown(e) {
   if (e.key == 'o') {
     lambdasPerPixel = lambdasPerPixel/1.5;
     var uvsize = height * lambdasPerPixel;
-    document.getElementById("uvsize").innerHTML = "UV plane extent: " + uvsize.toString() + " lambdas";
     gl.useProgram(program);
     lc = gl.getUniformLocation(program, "lpp");
     gl.uniform1f(lc, lambdasPerPixel);
@@ -437,7 +439,6 @@ function keydown(e) {
   if (e.key == 'p') {
     lambdasPerPixel = lambdasPerPixel*1.5;
     var uvsize = height * lambdasPerPixel;
-    document.getElementById("uvsize").innerHTML = "UV plane extent: " + uvsize.toString() + " lambdas";
     gl.useProgram(program);
     lc = gl.getUniformLocation(program, "lpp");
     gl.uniform1f(lc, lambdasPerPixel);
@@ -570,6 +571,8 @@ function keydown(e) {
     if (width > 100) {
       document.getElementById("canvas").width = width - 100;
       document.getElementById("canvas").height = height - 50;
+      document.getElementById("textcanvas").width = width - 100;
+      document.getElementById("textcanvas").height = height - 50;
       gl.viewport(0, 0, width-100, height-50);
       gl.useProgram(program);
       lc = gl.getUniformLocation(program, "resolution");
@@ -597,6 +600,8 @@ function keydown(e) {
     height = document.getElementById("canvas").height;
     document.getElementById("canvas").width = width + 100;
     document.getElementById("canvas").height = height + 50;
+    document.getElementById("textcanvas").width = width + 100;
+    document.getElementById("textcanvas").height = height + 50;
       gl.viewport(0, 0, width+100, height+50);
     gl.useProgram(program);
     lc = gl.getUniformLocation(program, "resolution");
@@ -979,6 +984,13 @@ function render() {
     currentcounter = currentcounter + (now - then);
     then = now;
     checkInput();
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.font = "10px Arial";
+    ctx.fillStyle = "white";
+    ctx.fillText("FOV: " + (radiansPerPixel * height * 180./Math.PI * 3600. * 1e6).toFixed(2).toString() + " muas", 10, height - 10);
+    ctx.fillText("Max u/v: " + (lambdasPerPixel * height).toFixed(2).toString() + " wavelengths", height + 10, height - 10);
+    ctx.fillText("Sky image", 10, 20);
+    ctx.fillText("Visibility map", height + 10, 20);
     // Set time in shader to now
     lc = gl.getUniformLocation(program, "time");
     gl.uniform1f(lc, currentcounter);
@@ -1001,15 +1013,128 @@ function main() {
 
   currentcounter = 0.;
 
+  // Add functions to deal with web form inputs (buttons, sliders, etc.)
+  var slider1 = document.getElementById("slider1");
+  var slider1output = document.getElementById("slider1output");
+  slider1output.innerHTML = slider1.value; // Display the default slider value
+
+  // Update the current slider value (each time you drag the slider handle)
+  slider1.oninput = function() {
+    slider1output.innerHTML = this.value;
+    xes[0] = this.value * radiansPerPixel;
+    lc = gl.getUniformLocation(program, "xes");
+    gl.uniform1fv(lc, xes);
+  }
+
   // Add key press event listener
   document.body.addEventListener("keydown", keydown, false);
   document.body.addEventListener("keyup", keyup, false);
 
   // Get A WebGL context
-  var canvas = document.getElementById("canvas");
   gl = canvas.getContext("webgl2");
   if (!gl) {
     return;
+  }
+
+  // look up the text canvas.
+  textcanvas = document.getElementById("textcanvas");
+  // make a 2D context for it
+  ctx = textcanvas.getContext("2d");
+
+  canvas.addEventListener("click", mouseclick, false);
+  canvas.addEventListener("mousedown", mouseDown, false);
+  canvas.addEventListener("mousemove", mouseMove, false);
+  canvas.addEventListener("mouseup", mouseUp, false);
+
+  function mouseclick(event) {
+    var br = canvas.getBoundingClientRect();
+    if (!mouse_dragging) {
+      var x = event.clientX - br.left - height/2.;
+      var y = event.clientY - br.top - height/2.;
+      if (x < height) {
+        // Use our mouseclick to reposition the active source component
+        xes[sel] =   2. * x * radiansPerPixel;
+        yes[sel] =  -2. * y * radiansPerPixel;
+        lc = gl.getUniformLocation(program, "xes");
+        gl.uniform1fv(lc, xes);
+        lc = gl.getUniformLocation(program, "yes");
+        gl.uniform1fv(lc, yes);
+      }
+
+      console.log("Clicked!");
+    }
+    mouse_dragging = false;
+  }
+
+  function mouseDown(event) {
+    var br = canvas.getBoundingClientRect();
+    if (event.which === 1) {
+      console.log("L Mouse down");
+      l_mouse_is_down = true;
+    } else if (event.which === 2) {
+      console.log("M Mouse down");
+    } else if (event.which === 3) {
+      console.log("R Mouse down");
+      r_mouse_is_down = true;
+      // sort out location and PA value
+      var mouse_x = event.clientX - br.left - height/2.;
+      var mouse_y = event.clientY - br.top - height/2.;
+      console.log("mouse x = ", mouse_x, ", mouse y = ", mouse_y);
+      if (xsigmas[sel] >= ysigmas[sel]) {
+        thetas[sel] = Math.atan2(mouse_y, mouse_x);
+      } else {
+        thetas[sel] = Math.atan2(mouse_y, mouse_x) + Math.PI/2.;
+      }
+      lc = gl.getUniformLocation(program, "thetas");
+      gl.uniform1fv(lc, thetas);
+    }
+    mousestart_x = event.clientX - br.left - height/2.;
+    mousestart_y = event.clientY - br.top - height/2.;
+
+  }
+
+  function mouseMove(event) {
+    if (l_mouse_is_down) { // left-clicking and dragging
+      mouse_dragging = true;
+      var br = canvas.getBoundingClientRect();
+      mouseend_x = event.clientX - br.left - height/2.;
+      mouseend_y = event.clientY - br.top - height/2.;
+      xsigmas[sel] = xsigmas[sel] + (mouseend_x - mousestart_x) * radiansPerPixel;
+      ysigmas[sel] = ysigmas[sel] - (mouseend_y - mousestart_y) * radiansPerPixel;
+      if (xsigmas[sel] < radiansPerPixel) xsigmas[sel] = radiansPerPixel;
+      if (ysigmas[sel] < radiansPerPixel) ysigmas[sel] = radiansPerPixel;
+      mousestart_x = mouseend_x;
+      mousestart_y = mouseend_y;
+      lc = gl.getUniformLocation(program, "xsigmas");
+      gl.uniform1fv(lc, xsigmas);
+      lc = gl.getUniformLocation(program, "ysigmas");
+      gl.uniform1fv(lc, ysigmas);
+      console.log("Mouse dragging");
+    } else if (r_mouse_is_down) { // right-clicking and dragging
+      // sort out location and PA value
+      var br = canvas.getBoundingClientRect();
+      var mouse_x = event.clientX - br.left - height/2.;
+      var mouse_y = event.clientY - br.top - height/2.;
+      console.log("mouse x = ", mouse_x, ", mouse y = ", mouse_y);
+      if (xsigmas[sel] >= ysigmas[sel]) {
+        thetas[sel] = Math.atan2(mouse_y, mouse_x);
+      } else {
+        thetas[sel] = Math.atan2(mouse_y, mouse_x) + Math.PI/2.;
+      }
+      lc = gl.getUniformLocation(program, "thetas");
+      gl.uniform1fv(lc, thetas);
+    } else {
+      console.log("Mouse moving");
+    }
+  }
+
+  function mouseUp(event) {
+    console.log("Mouse up");
+    var br = canvas.getBoundingClientRect();
+    mouseend_x = event.clientX - br.left - height/2.;
+    mouseend_y = event.clientY - br.top - height/2.;
+    if (event.which === 1) l_mouse_is_down = false;
+    if (event.which === 3) r_mouse_is_down = false;
   }
 
   // setup GLSL program

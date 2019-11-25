@@ -1,30 +1,42 @@
 <html>
 <!--
-Things to do:
+DONE:
 - Finish up edit modes: one mode for position/size (x/y, sigma, brightness, PA), one mode for x/y dynamics, one mode for size dynamics, one mode for brightness and angle dynamics.
-- Add sliders using javascript with their respective text explanations. Their function may shift depending on the active mode in the canvas.
 - Add mouse controls for the javascript canvas. click, click-n-drag, right click, right click-n-drag? What should they do?
-- Add ability to make a visibility plot for a given baseline
-- Add ability to make a closure phase plot for a given triangle
-- Add ability to make a closure amplitude plot for a given quadrangle
-- How to present plots? Stationary baseline, or with evolvong baseline?
+
+Things to do:
+- How to present component parameters in the HTML interface? We could use a table that changes in appearance according to the currently active edit mode. The table should have editable fields where the user can input values at will. Also should include a 'reset' option for the currently active component, which resets all the parameters in the current table view for that component. Perhaps also a 'reset all' option.
+- Add sliders using javascript with their respective text explanations. Their function may shift depending on the active mode in the canvas.
+- Export visibility measurements from webgl back into javascript:
+	- Add ability to make a visibility plot for a given baseline
+	- Add ability to make a closure phase plot for a given triangle
+	- Add ability to make a closure amplitude plot for a given quadrangle
+- How to present plots? Stationary baseline, or with evolving baseline?
 - How to manage stations in HTML interface?
 -->
 <title>A simple visibility simulation</title>
-<body>
+<head>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body oncontextmenu="return false;">
 <h1>A simple visibility simulation</h1>
 <p>Below, we show an interactive canvas with a sky image of some hypothetical radio source on the left, consisting of up to 10 separate source components. On the right, the colourful area shows the interferometric visibility map that corresponds to the sky image on the left. Source image components can be added, edited or removed to see what effect they have on the visibility map. If you're starting out, try to move the single source component around by using the arrow keys, and see how the phases of the visibilities get affected.</p>
 
-<p>The interface only uses keys for now (I plan to implement a mouse control interface). There are 4 modes for the interface, and you can switch between them by pressing 'j'. The controls that are valid for each mode, visible at the bottom of this page, are updated whenever you switch modes.</p>
+<p>Everything can be controlled using the keyboard (see controls at the bottom of the page), but there is also an elementary mouse interface. Left-clicking anywhere in the left subplot will place the active source component at that location. Left-click and drag allows you to adjust the size of the active source component. Right-clicking or dragging anywhere will adjust the major axis of the active source component. There are 4 modes for the keyboard interface, and you can switch between them by pressing 'j'. The controls that are valid for each mode, visible at the bottom of this page, are updated whenever you switch modes.</p>
 
-<p>Note that this is a very early version: I have not yet included sensible information such as the field of view or the extent of the visibility map in terms of observing wavelengths. I still need to figure out a nice way to present these things. :) If you have questions, comments or suggestions for improvement and/or expansion, I will be happy to hear from you. Please contact me at my department email address (c dot brinkerink at astro dot ru dot nl).</p>
+<p>Note that this is a very early version: while elemtary information on the current field of view and the visible extent of the (u,v)-map is given below the canvas, I still need to figure out a nice way to present these things.
+
+If you have questions, comments or suggestions for improvement and/or expansion, I will be happy to hear from you. Please contact me at my department email address (c dot brinkerink at astro dot ru dot nl).</p>
 
 <p>For a list of all controls, see bottom of page.</p>
+<div class="container">
 <canvas id="canvas" width="1200" height="600"></canvas>
-<p id="fov">Field of view: 600 microarcseconds</p>
-<p id="uvsize">UV plane extent: 3e11 lambdas</p>
+<canvas id="textcanvas" width="1200" height="600"></canvas>
+</div>
 <p id="modetext">Now in component placement/sizing mode</p>
-
+<div class="slidecontainer">
+	<input type="range" min="-300" max="300" value="0" class="slider" id="slider1"><p id="slider1output">0</p>
+</div>
 <!-- vertex shader -->
 <script id="2d-vertex-shader" type="x-shader/x-vertex">#version 300 es
 
@@ -175,6 +187,11 @@ void main() {
       col = clamp(col, vec4(0.0), vec4(1.0));
     }
     fragColor = col;
+    if (gl_FragCoord.x > (resolution.y - 1.)) {
+      if (mod(gl_FragCoord.y,10.) < 5.) {
+        fragColor = vec4(1.0, 1.0, 1.0, 1.0);
+      }
+    }
   } else {
     // Fourier plane
     float real = 0.;
@@ -247,7 +264,7 @@ void main() {
 <div id="controls">
 <h2>Controls for currently active mode</h2>
 <h3>single-press actions</h3>
-<p>[ and ] keys: cycle through all 10 components to select the active source component (the selected component is indicated by a thin green bar at the very bottom of the sky image that jumps left or right when you switch selections  - look carefully). There are 10 source components in total that can all be modified.</p>
+<p>[ and ] keys: cycle through all 10 components to select the active source component (the selected component is indicated by a thin green bar at the very bottom of the sky image that jumps left or right when you switch selections  - look carefully). There are 10 source components in total that can all be modified. In the sky image, the active source component is coloured magenta.</p>
 <p>q key: switch the type of the current source component between 2D Gaussian and circular disk. For the disk, only sigma-x is used to determine its size.</p>
 <p>m key: center active component in middle of sky image.</p>
 <p>n key: normalize strength of active component to 1.</p>

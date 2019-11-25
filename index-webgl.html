@@ -20,6 +20,11 @@ Things to do:
 </head>
 <body oncontextmenu="return false;">
 <h1>A simple visibility simulation</h1>
+<div class="container">
+<canvas id="canvas" width="1200" height="600"></canvas>
+<canvas id="textcanvas" width="1200" height="600"></canvas>
+</div>
+<div id="wrapper">
 <p>Below, we show an interactive canvas with a sky image of some hypothetical radio source on the left, consisting of up to 10 separate source components. On the right, the colourful area shows the interferometric visibility map that corresponds to the sky image on the left. Source image components can be added, edited or removed to see what effect they have on the visibility map. If you're starting out, try to move the single source component around by using the arrow keys, and see how the phases of the visibilities get affected.</p>
 
 <p>Everything can be controlled using the keyboard (see controls at the bottom of the page), but there is also an elementary mouse interface. Left-clicking anywhere in the left subplot will place the active source component at that location. Left-click and drag allows you to adjust the size of the active source component. Right-clicking or dragging anywhere will adjust the major axis of the active source component. There are 4 modes for the keyboard interface, and you can switch between them by pressing 'j'. The controls that are valid for each mode, visible at the bottom of this page, are updated whenever you switch modes.</p>
@@ -29,10 +34,8 @@ Things to do:
 If you have questions, comments or suggestions for improvement and/or expansion, I will be happy to hear from you. Please contact me at my department email address (c dot brinkerink at astro dot ru dot nl).</p>
 
 <p>For a list of all controls, see bottom of page.</p>
-<div class="container">
-<canvas id="canvas" width="1200" height="600"></canvas>
-<canvas id="textcanvas" width="1200" height="600"></canvas>
 </div>
+<div id="wrapper">
 <p id="modetext">Now in component placement/sizing mode</p>
 <div class="slidecontainer">
 	<input type="range" min="-300" max="300" value="0" class="slider" id="slider1"><p id="slider1output">0</p>
@@ -283,6 +286,7 @@ void main() {
 <p>z and x keys: change strength of active component. Strength can be negative so that flux can be subtracted from other elements. When sky flux density becomes negative anywhere, this is indicated with a red colour.</p>
 <p>c and v keys: change brightness scale of sky image.</p>
 <p>minus and equals keys: change brightness scale of visibility map.</p>
+</div>
 </div>
 </body>
 </html>

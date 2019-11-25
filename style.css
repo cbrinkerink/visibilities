@@ -1,5 +1,5 @@
 .container {
-    position: absolute;
+    position: relative;
 }
  
 #textcanvas {
@@ -8,4 +8,8 @@
     top: 0px;
     z-index: 10;
     pointer-events: none;
+}
+
+#wrapper {
+    float: left;
 }

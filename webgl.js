@@ -573,6 +573,7 @@ function keydown(e) {
       document.getElementById("canvas").height = height - 50;
       document.getElementById("textcanvas").width = width - 100;
       document.getElementById("textcanvas").height = height - 50;
+      ctx = textcanvas.getContext("2d");
       gl.viewport(0, 0, width-100, height-50);
       gl.useProgram(program);
       lc = gl.getUniformLocation(program, "resolution");
@@ -586,6 +587,8 @@ function keydown(e) {
       gl.uniform1f(lc, radiansPerPixel);
       lc = gl.getUniformLocation(program, "lpp");
       gl.uniform1f(lc, lambdasPerPixel);
+      width  = document.getElementById("canvas").width;
+      height = document.getElementById("canvas").height;
       requestAnimationFrame(render);
     }
     //console.log("Actual canvas width = ", document.getElementById("canvas").width);
@@ -602,7 +605,8 @@ function keydown(e) {
     document.getElementById("canvas").height = height + 50;
     document.getElementById("textcanvas").width = width + 100;
     document.getElementById("textcanvas").height = height + 50;
-      gl.viewport(0, 0, width+100, height+50);
+    ctx = textcanvas.getContext("2d");
+    gl.viewport(0, 0, width+100, height+50);
     gl.useProgram(program);
     lc = gl.getUniformLocation(program, "resolution");
     gl.uniform2f(lc, width+100, height+50);
@@ -615,6 +619,8 @@ function keydown(e) {
     gl.uniform1f(lc, radiansPerPixel);
     lc = gl.getUniformLocation(program, "lpp");
     gl.uniform1f(lc, lambdasPerPixel);
+    width  = document.getElementById("canvas").width;
+    height = document.getElementById("canvas").height;
     requestAnimationFrame(render);
     //console.log("Actual canvas width = ", document.getElementById("canvas").width);
     //console.log("drawingBufferWidth = ", gl.drawingBufferWidth);

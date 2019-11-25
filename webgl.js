@@ -23,7 +23,7 @@ var lc;
 // Keep track of whether the mouse button is down
 var l_mouse_is_down = false;
 var r_mouse_is_down = false;
-var mousestart_x, mousestart_y, mouseend_x, mouseend_y, mousemoved_x, mousemoved_y, mouse_dragging;
+var mousestart_x, mousestart_y, mouselast_x, mouselast_y, mouseend_x, mouseend_y, mousemoved_x, mousemoved_y, mouse_dragging;
 
 var currentLoc = new Float32Array([20.,50.,90.,130.,170.,200.,220.,270.,290.,330.]);
 var gl;
@@ -1053,7 +1053,7 @@ function main() {
       var y = event.clientY - br.top - height/2.;
       if (x < height) {
         // Use our mouseclick to reposition the active source component
-        xes[sel] =   2. * x * radiansPerPixel;
+        xes[sel] =   2. * x * radiansPerPixel; // Not quite sure why the scaling factor of 2 needs to be in there...but it works.
         yes[sel] =  -2. * y * radiansPerPixel;
         lc = gl.getUniformLocation(program, "xes");
         gl.uniform1fv(lc, xes);
@@ -1090,7 +1090,8 @@ function main() {
     }
     mousestart_x = event.clientX - br.left - height/2.;
     mousestart_y = event.clientY - br.top - height/2.;
-
+    mouselast_x = mousestart_x;
+    mouselast_y = mousestart_y;
   }
 
   function mouseMove(event) {
@@ -1099,12 +1100,12 @@ function main() {
       var br = canvas.getBoundingClientRect();
       mouseend_x = event.clientX - br.left - height/2.;
       mouseend_y = event.clientY - br.top - height/2.;
-      xsigmas[sel] = xsigmas[sel] + (mouseend_x - mousestart_x) * radiansPerPixel;
-      ysigmas[sel] = ysigmas[sel] - (mouseend_y - mousestart_y) * radiansPerPixel;
+      xsigmas[sel] = xsigmas[sel] + (mouseend_x - mouselast_x) * radiansPerPixel;
+      ysigmas[sel] = ysigmas[sel] - (mouseend_y - mouselast_y) * radiansPerPixel;
       if (xsigmas[sel] < radiansPerPixel) xsigmas[sel] = radiansPerPixel;
       if (ysigmas[sel] < radiansPerPixel) ysigmas[sel] = radiansPerPixel;
-      mousestart_x = mouseend_x;
-      mousestart_y = mouseend_y;
+      mouselast_x = mouseend_x;
+      mouselast_y = mouseend_y;
       lc = gl.getUniformLocation(program, "xsigmas");
       gl.uniform1fv(lc, xsigmas);
       lc = gl.getUniformLocation(program, "ysigmas");
@@ -1135,6 +1136,8 @@ function main() {
     mouseend_y = event.clientY - br.top - height/2.;
     if (event.which === 1) l_mouse_is_down = false;
     if (event.which === 3) r_mouse_is_down = false;
+    // Don't count it as dragging if the movement was small
+    if (Math.abs(mouseend_x - mousestart_x) < 5. && Math.abs(mouseend_y - mousestart_y) < 5.) mouse_dragging = false;
   }
 
   // setup GLSL program

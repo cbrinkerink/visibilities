@@ -25,13 +25,13 @@ Things to do:
 <canvas id="textcanvas" width="1200" height="600"></canvas>
 </div>
 <div id="wrapper">
-<p>Below, we show an interactive canvas with a sky image of some hypothetical radio source on the left, consisting of up to 10 separate source components. On the right, the colourful area shows the interferometric visibility map that corresponds to the sky image on the left. Source image components can be added, edited or removed to see what effect they have on the visibility map. If you're starting out, try to move the single source component around by using the arrow keys, and see how the phases of the visibilities get affected.</p>
+<p>Above, we show an interactive canvas with a sky image of some hypothetical radio source on the left, consisting of up to 10 separate source components. On the right, the colourful area shows the interferometric visibility map that corresponds to the sky image on the left. Source image components can be added, edited or removed to see what effect they have on the visibility map. If you're starting out, try to move the single source component around by using the arrow keys, and see how the phases of the visibilities get affected.</p>
 
 <p>Everything can be controlled using the keyboard (see controls at the bottom of the page), but there is also an elementary mouse interface. Left-clicking anywhere in the left subplot will place the active source component at that location. Left-click and drag allows you to adjust the size of the active source component. Right-clicking or dragging anywhere will adjust the major axis of the active source component. There are 4 modes for the keyboard interface, and you can switch between them by pressing 'j'. The controls that are valid for each mode, visible at the bottom of this page, are updated whenever you switch modes.</p>
 
-<p>Note that this is a very early version: while elemtary information on the current field of view and the visible extent of the (u,v)-map is given below the canvas, I still need to figure out a nice way to present these things.
+<p>Note that this is a very early version: many of the functions that I mean to add have not been implemented yet.
 
-If you have questions, comments or suggestions for improvement and/or expansion, I will be happy to hear from you. Please contact me at my department email address (c dot brinkerink at astro dot ru dot nl).</p>
+If you have questions, comments or suggestions for improvements and/or functional extension, I will be happy to hear from you. Please contact me at my department email address (c dot brinkerink at astro dot ru dot nl).</p>
 
 <p>For a list of all controls, see bottom of page.</p>
 </div>
@@ -194,6 +194,10 @@ void main() {
       if (mod(gl_FragCoord.y,10.) < 5.) {
         fragColor = vec4(1.0, 1.0, 1.0, 1.0);
       }
+    } else if (gl_FragCoord.x < (resolution.y/2. + 1.) && gl_FragCoord.x > (resolution.y/2. - 1.) && gl_FragCoord.y < (resolution.y/2. + 20.) && gl_FragCoord.y > (resolution.y/2. - 20.)) {
+      fragColor = vec4(0.0, 1.0, 0.0, 1.0);
+    } else if (gl_FragCoord.y < (resolution.y/2. + 1.) && gl_FragCoord.y > (resolution.y/2. - 1.) && gl_FragCoord.x < (resolution.y/2. + 20.) && gl_FragCoord.x > (resolution.y/2. - 20.)) {
+      fragColor = vec4(0.0, 1.0, 0.0, 1.0);
     }
   } else {
     // Fourier plane

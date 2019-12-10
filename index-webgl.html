@@ -25,6 +25,133 @@ Things to do:
 <canvas id="textcanvas" width="1200" height="600"></canvas>
 </div>
 <div id="wrapper">
+<br>
+<table id="componenttable" class="comptable">
+  <tr>
+    <th>Comp. index</th>
+    <th>Xpos</th>
+    <th>Ypos</th>
+    <th>Xsigma</th>
+    <th>Ysigma</th>
+    <th>Brightness</th>
+    <th>PA</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td id="c1-px" contenteditable='true'>0.</td>
+    <td id="c1-py" contenteditable='true'>0.</td>
+    <td id="c1-sx" contenteditable='true'>50.</td>
+    <td id="c1-sy" contenteditable='true'>50.</td>
+    <td id="c1-br" contenteditable='true'>1.</td>
+    <td id="c1-pa" contenteditable='true'>0.</td>
+    <td rowspan="10"><button class="button" onclick="fill_js_from_table()" text-align="center">Update<br>all<br>values</button></td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td id="c2-px" contenteditable='true'>0.</td>
+    <td id="c2-py" contenteditable='true'>0.</td>
+    <td id="c2-sx" contenteditable='true'>50.</td>
+    <td id="c2-sy" contenteditable='true'>50.</td>
+    <td id="c2-br" contenteditable='true'>0.</td>
+    <td id="c2-pa" contenteditable='true'>0.</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td id="c3-px" contenteditable='true'>0.</td>
+    <td id="c3-py" contenteditable='true'>0.</td>
+    <td id="c3-sx" contenteditable='true'>50.</td>
+    <td id="c3-sy" contenteditable='true'>50.</td>
+    <td id="c3-br" contenteditable='true'>0.</td>
+    <td id="c3-pa" contenteditable='true'>0.</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td id="c4-px" contenteditable='true'>0.</td>
+    <td id="c4-py" contenteditable='true'>0.</td>
+    <td id="c4-sx" contenteditable='true'>50.</td>
+    <td id="c4-sy" contenteditable='true'>50.</td>
+    <td id="c4-br" contenteditable='true'>0.</td>
+    <td id="c4-pa" contenteditable='true'>0.</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td id="c5-px" contenteditable='true'>0.</td>
+    <td id="c5-py" contenteditable='true'>0.</td>
+    <td id="c5-sx" contenteditable='true'>50.</td>
+    <td id="c5-sy" contenteditable='true'>50.</td>
+    <td id="c5-br" contenteditable='true'>0.</td>
+    <td id="c5-pa" contenteditable='true'>0.</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td id="c6-px" contenteditable='true'>0.</td>
+    <td id="c6-py" contenteditable='true'>0.</td>
+    <td id="c6-sx" contenteditable='true'>50.</td>
+    <td id="c6-sy" contenteditable='true'>50.</td>
+    <td id="c6-br" contenteditable='true'>0.</td>
+    <td id="c6-pa" contenteditable='true'>0.</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td id="c7-px" contenteditable='true'>0.</td>
+    <td id="c7-py" contenteditable='true'>0.</td>
+    <td id="c7-sx" contenteditable='true'>50.</td>
+    <td id="c7-sy" contenteditable='true'>50.</td>
+    <td id="c7-br" contenteditable='true'>0.</td>
+    <td id="c7-pa" contenteditable='true'>0.</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td id="c8-px" contenteditable='true'>0.</td>
+    <td id="c8-py" contenteditable='true'>0.</td>
+    <td id="c8-sx" contenteditable='true'>50.</td>
+    <td id="c8-sy" contenteditable='true'>50.</td>
+    <td id="c8-br" contenteditable='true'>0.</td>
+    <td id="c8-pa" contenteditable='true'>0.</td>
+  </tr>
+  <tr>
+    <td>9</td>
+    <td id="c9-px" contenteditable='true'>0.</td>
+    <td id="c9-py" contenteditable='true'>0.</td>
+    <td id="c9-sx" contenteditable='true'>50.</td>
+    <td id="c9-sy" contenteditable='true'>50.</td>
+    <td id="c9-br" contenteditable='true'>0.</td>
+    <td id="c9-pa" contenteditable='true'>0.</td>
+  </tr>
+  <tr>
+    <td>10</td>
+    <td id="c10-px" contenteditable='true'>0.</td>
+    <td id="c10-py" contenteditable='true'>0.</td>
+    <td id="c10-sx" contenteditable='true'>50.</td>
+    <td id="c10-sy" contenteditable='true'>50.</td>
+    <td id="c10-br" contenteditable='true'>0.</td>
+    <td id="c10-pa" contenteditable='true'>0.</td>
+  </tr>
+</table>
+<br>
+<table id="visibilitiestable" class="vistable">
+  <tr>
+    <th>Point index</th>
+    <th>U coord</th>
+    <th>V coord</th>
+    <th>Time</th>
+    <th>Amp</th>
+    <th>Phase</th>
+    <th><button class="button" onclick="upload_uvs_from_table()" text-align="center">Calculate<br>all<br>visibilities</button><br><br><button class="button" onclick="add_row_to_visibilitiestable()" text-align="center">Add uv-point</button></th>
+  </tr>
+  <tr id="uv-row-1">
+    <td>1</td>
+    <td contenteditable='true'>0.</td>
+    <td contenteditable='true'>0.</td>
+    <td contenteditable='true'>0.</td>
+    <td contenteditable='true'></td>
+    <td contenteditable='true'></td>
+    <td><button class="button" onclick="remove_uvpoint_from_table(this)" >Remove</button></td>
+  </tr>
+
+</table>
+</div>
+<div id="wrapper">
 <p>Above, we show an interactive canvas with a sky image of some hypothetical radio source on the left, consisting of up to 10 separate source components. On the right, the colourful area shows the interferometric visibility map that corresponds to the sky image on the left. Source image components can be added, edited or removed to see what effect they have on the visibility map. If you're starting out, try to move the single source component around by using the arrow keys, and see how the phases of the visibilities get affected.</p>
 
 <p>Everything can be controlled using the keyboard (see controls at the bottom of the page), but there is also an elementary mouse interface. Left-clicking anywhere in the left subplot will place the active source component at that location. Left-click and drag allows you to adjust the size of the active source component. Right-clicking or dragging anywhere will adjust the major axis of the active source component. There are 4 modes for the keyboard interface, and you can switch between them by pressing 'j'. The controls that are valid for each mode, visible at the bottom of this page, are updated whenever you switch modes.</p>
@@ -251,7 +378,6 @@ void main() {
     for (int i = 0; i < 10; i++) {
       float u = (gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * lpp;
       float v = (gl_FragCoord.y - (resolution.y - 1.)/2.               ) * lpp;
-      //if (((u-uvpoints[2*i])*(u-uvpoints[2*i]) + (v-uvpoints[2*i+1])*(v-uvpoints[2*i+1])) < 1e20) fragColor = vec4(1., 1., 1., 1.); // paint pixel white
       if ((u-uvpoints[2*i])*(u-uvpoints[2*i]) + (v-uvpoints[2*i])*(v-uvpoints[2*i]) < 3. * lpp * lpp) fragColor = vec4(1., 1., 1., 1.); // paint pixel white
     }
   }
@@ -263,6 +389,170 @@ void main() {
   //  fragColor = vec4(vec3(testvec[int(4. * gl_FragCoord.x / resolution.x)].x),1.);
     //fragColor = vec4(1.,0.,0.,1.);
   //}
+}
+</script>
+
+<script id="2d-vertex-calc" type="x-shader/x-vertex">#version 300 es
+
+in vec2 a_position;
+in vec4 a_color;
+in vec2 a_texcoord;
+
+out vec2 v_texcoord;
+
+uniform mat3 u_matrix;
+
+out vec4 v_color;
+
+void main() {
+  // Multiply the position by the matrix.
+  gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);
+
+  // Copy the color from the attribute to the varying.
+  v_color = a_color;
+  v_texcoord = a_texcoord;
+}
+</script>
+
+<script id="2d-vis-calc" type="x-shader/x-fragment">#version 300 es
+precision mediump float;
+precision mediump int;
+
+#define PI 3.1415926536
+
+uniform vec2 resolution;
+uniform int sourcetypes[10];
+uniform float xes[10];
+uniform float yes[10];
+uniform float xsigmas[10];
+uniform float ysigmas[10];
+uniform float thetas[10];
+uniform float strengths[10];
+
+uniform float vps[180];
+
+uniform float scale;
+uniform float fourierstrength;
+uniform float imagestrength;
+uniform float lpp;
+uniform float rpp;
+uniform int sel;
+
+uniform float redBalance;
+uniform float greenBalance;
+uniform float blueBalance;
+
+uniform float uvpoints[20];
+
+in vec2 v_texcoord;
+uniform sampler2D uvpoints_info;
+uniform sampler2D output_visibilities;
+out vec4 fragColor;
+
+float bessel(float x, int n) {
+  if (n < 0) return 0.0;
+
+  float d = 1e-6;
+  float b = 0.;
+  if (abs(x) <= d) {
+    if (n != 0) return 0.;
+    return 1.;
+  }
+
+  float b1 = 0.;  // b1 is the value from the previous iteration
+  // Set up a starting order for recurrence
+  int m1 = int(abs(x)) + 6;
+  if (abs(x) > 5.) m1 = int(abs(1.4 * x + 60. / x));
+
+  int m2 = int(float(n) + 2. + abs(x) / 4.);
+  if (m1 > m2) m2 = m1;
+
+  // Apply recurrence down from current max order
+  int maxiters = 20;
+  int iter = 0;
+  while (iter < maxiters) {
+    float c3 = 0.;
+    float c2 = 1e-30;
+    float c4 = 0.;
+    int m8 = 1;
+    if (int(floor(float(m2)/2.)) * 2 == m2) m8 = -1;
+
+    int imax = m2 - 2;
+    for (int i = 1; i < imax + 1; i++) {
+      float c6 = 2. * (float(m2) - float(i)) * c2 / x - c3;
+      c3 = c2;
+      c2 = c6;
+      if (m2 - i - 1 == n) b = c6;
+      m8 = -1 * m8;
+      if (m8 > 0) c4 = c4 + 2. * c6;
+    }
+
+    float c6 = 2. * c2 / x - c3;
+    if (n == 0) b = c6;
+    c4 += c6;
+    b /= c4;
+    if (abs(b - b1) < d) return b;
+    b1 = b;
+    m2 += 3;
+    iter++;
+  }
+  return b;
+}
+
+void main() {
+  // Note that our output viewport size should match our output texture size, as well as our input texture size.
+  // For simplicity, we should try to use a 1x1024 texture/viewport geometry. This allows us to process 1024 visibility measurements,
+  // where for every visibility measurement we have access to 4 float32 numbers for input/output.
+  vec2 loc = gl_FragCoord.xy / resolution.xy;
+
+  vec4 col = texture(uvpoints_info, loc);
+  float ucoord = col.r; // 1st component is our u coordinate
+  float vcoord = col.g; // 2nd component is our v coordinate
+  float time   = col.b; // 3rd component of our input 'colour' is time
+
+  // Fourier plane
+  float real = 0.;
+  float imag = 0.;
+  float phasenew = 0.;
+  float ampnew = 0.;
+  for (int i = 0; i < 10; i++) {
+    float posx = xes[i] + vps[18*i]   * sin(time * 2. * PI/ vps[18*i+1] + vps[18*i+2]);
+    float posy = yes[i] + vps[18*i+3] * sin(time * 2. * PI/ vps[18*i+1] + vps[18*i+5]);
+    float currentstrength = strengths[i] + vps[18*i+6] * sin(time * 2. * PI/ vps[18*i+7] + vps[18*i+8]);
+    float currentxsigma = xsigmas[i] + vps[18*i+9] * sin(time * 2. * PI/ vps[18*i+10] + vps[18*i+11]);
+    float currentysigma = ysigmas[i] + vps[18*i+12] * sin(time * 2. * PI/ vps[18*i+13] + vps[18*i+14]);
+    float currenttheta = thetas[i] + vps[18*i+15] * sin(time * 2. * PI/ vps[18*i+16] + vps[18*i+17]);
+    if (sourcetypes[i] == 0) { // Gaussian
+      float sigma_x = PI * PI / (currentxsigma);
+      float sigma_y = PI * PI / (currentysigma);
+      float a = cos(currenttheta) * cos(currenttheta) / (2. * sigma_x * sigma_x) + sin(currenttheta) * sin(currenttheta) / (2. * sigma_y * sigma_y);
+      float b = -sin(2. * currenttheta) / (4. * sigma_x * sigma_x) + sin(2. * currenttheta) / (4. * sigma_y * sigma_y);
+      float c = sin(currenttheta) * sin(currenttheta) / (2. * sigma_x * sigma_x) + cos(currenttheta) * cos(currenttheta) / (2. * sigma_y * sigma_y);
+      phasenew = -PI * (ucoord * posx + vcoord * posy);
+      phasenew = mod(phasenew, 2. * PI);
+      // Gaussian source type
+      // Note tht we likely should not invoke any display scaling here.
+      //ampnew = (PI * (currentxsigma * currentysigma) * currentstrength * exp(-(a * ucoord/lpp * ucoord/lpp + 2. * b * ucoord/lpp * vcoord/lpp + c * vcoord/lpp * vcoord/lpp)));
+      //ampnew = (PI * (currentxsigma * currentysigma) * currentstrength * exp(-(a * ucoord * ucoord + 2. * b * ucoord * vcoord + c * vcoord * vcoord)));
+      ampnew = (currentstrength * exp(-(a * ucoord * ucoord + 2. * b * ucoord * vcoord + c * vcoord * vcoord)));
+    } else if (sourcetypes[i] == 1) { // Disk
+      phasenew = -PI * (ucoord * posx + vcoord * posy);
+      phasenew = mod(phasenew, 2. * PI);
+      float radius = sqrt(ucoord * ucoord + vcoord * vcoord);
+      float br = bessel(currentxsigma * radius, 1) / (currentxsigma * radius);
+      if (radius < 1e-1) br = 0.5;
+      ampnew = currentstrength * fourierstrength * 2. * PI * currentxsigma * currentxsigma * br;
+    }
+    real = real + cos(phasenew) * ampnew;
+    imag = imag + sin(phasenew) * ampnew;
+  }
+  float phase = atan(imag, real);
+  float amp = sqrt(real*real + imag*imag);
+
+  // Output the calculate amplitude and phase into the pixel colour, along with the time (we have 4x float32 space per pixel)
+  //fragColor = vec4(textureSize(uvpoints_info, 0).y, textureSize(output_visibilities, 0).y, time, 1.);
+  fragColor = vec4(amp, phase, time, 1.);
+  //fragColor = vec4(ucoord, vcoord, time, 1.); // For testing only
 }
 </script>
 

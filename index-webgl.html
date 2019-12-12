@@ -3,15 +3,25 @@
 DONE:
 - Finish up edit modes: one mode for position/size (x/y, sigma, brightness, PA), one mode for x/y dynamics, one mode for size dynamics, one mode for brightness and angle dynamics.
 - Add mouse controls for the javascript canvas. click, click-n-drag, right click, right click-n-drag? What should they do?
-
-Things to do:
-- How to present component parameters in the HTML interface? We could use a table that changes in appearance according to the currently active edit mode. The table should have editable fields where the user can input values at will. Also should include a 'reset' option for the currently active component, which resets all the parameters in the current table view for that component. Perhaps also a 'reset all' option.
-- Add sliders using javascript with their respective text explanations. Their function may shift depending on the active mode in the canvas.
 - Export visibility measurements from webgl back into javascript:
 	- Add ability to make a visibility plot for a given baseline
+	- How to present plots? Stationary baseline, or with evolving baseline? - SOLVED: we can plot vs uvdistance or vs time.
+
+TO FIX:
+- The brightness of source components currently does not behave properly, as it has different definitions in different 
+  segments of the code. The image plane keeps the surface brightness constant while enlarging a component, while the
+  brightness property is not correspondingly increased. Likewise, the uv-plot graph is off because of this.
+  Test case: the total flux density of the image should always be the sum of the strengths of all components.
+  This is the zero-baseline flux density, and this should be the highest flux density that is present in the uv-plot.
+  So: the 'brightness' parameter should always reflect the total strength of the component in Jy. The pixel brightness
+  in the image plane should be scaled according to (brightness / (sigmax * sigmay)), with an appropriate normalisation.
+  When we change sigmax and/or sigmay, we should keep the total brightness constant but adjust the pixel brightness.
+
+Things to do:
+- Display active uv-points in the plotting area (use the overlay, so that the points can be plotted directly).
+- Export visibility measurements from webgl back into javascript:
 	- Add ability to make a closure phase plot for a given triangle
 	- Add ability to make a closure amplitude plot for a given quadrangle
-- How to present plots? Stationary baseline, or with evolving baseline?
 - How to manage stations in HTML interface?
 -->
 <title>A simple visibility simulation</title>
@@ -298,12 +308,14 @@ void main() {
         float a = cos(currenttheta) * cos(currenttheta) / (2. * currentxsigma * currentxsigma) + sin(currenttheta) * sin(currenttheta) / (2. * currentysigma * currentysigma);
         float b = -sin(2. * currenttheta) / (4. * currentxsigma * currentxsigma) + sin(2. * currenttheta) / (4. * currentysigma * currentysigma);
         float c = sin(currenttheta) * sin(currenttheta) / (2. * currentxsigma * currentxsigma) + cos(currenttheta) * cos(currenttheta) / (2. * currentysigma * currentysigma);
-        float val = imagestrength * currentstrength * exp(-(a * (rpp * scale * pos.x - posx) * 
-	                                                        (rpp * scale * pos.x - posx) +
-					               2. * b * (rpp * scale * pos.x - posx) * 
-						                (rpp * scale * pos.y - posy) + 
-						            c * (rpp * scale * pos.y - posy) * 
-						      	        (rpp * scale * pos.y - posy)));
+	// Attempting to fix the brightness issue by re-introducing xsigma and ysigma.
+	// Current normalization should be correct for image plane!
+        float val = imagestrength * 1. / (2. * PI * (currentxsigma * currentysigma)) * currentstrength * exp(-(a * (rpp * scale * pos.x - posx) * 
+	                                                                                                           (rpp * scale * pos.x - posx) +
+					                                                                  2. * b * (rpp * scale * pos.x - posx) * 
+						                                                                   (rpp * scale * pos.y - posy) + 
+						                                                               c * (rpp * scale * pos.y - posy) * 
+						                                           	                   (rpp * scale * pos.y - posy)));
         col.x = col.x + val;
         if (i != sel) col.y = col.y + val;
         col.z = col.z + val;
@@ -313,7 +325,7 @@ void main() {
 			  (rpp * scale * pos.y - posy) * 
 			  (rpp * scale * pos.y - posy));
         float val = 0.;
-        if (dist < currentxsigma) val = imagestrength * currentstrength;
+        if (dist < currentxsigma) val = imagestrength * currentstrength / (PI * currentxsigma * currentxsigma);
         col.x = col.x + val;
         if (i != sel) col.y = col.y + val;
         col.z = col.z + val;
@@ -361,8 +373,8 @@ void main() {
                           (gl_FragCoord.y - (resolution.y - 1.)/2.               ) * lpp * posy);
         phasenew = mod(phasenew, 2. * PI);
         // Gaussian source type
-        // Version where we invert the sigmax and sigmay for amplitude scaling:
-        ampnew = fourierstrength * (PI * (currentxsigma * currentysigma) * currentstrength * exp(-(a * (gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y)*(gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) + 2. * b * (gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * (gl_FragCoord.y - (resolution.y - 1.)/2.) + c * (gl_FragCoord.y - (resolution.y - 1.)/2.) * (gl_FragCoord.y - (resolution.y - 1.)/2.))));
+        // Properly caled version: only the total image flux density is used for scaling (integrated flux density should be value at origin)
+        ampnew = fourierstrength * currentstrength * exp(-(a * (gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y)*(gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) + 2. * b * (gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * (gl_FragCoord.y - (resolution.y - 1.)/2.) + c * (gl_FragCoord.y - (resolution.y - 1.)/2.) * (gl_FragCoord.y - (resolution.y - 1.)/2.)));
       } else if (sourcetypes[i] == 1) { // Disk
         phasenew = -PI * ((gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * lpp * posx + 
                           (gl_FragCoord.y - (resolution.y - 1.)/2.               ) * lpp * posy);
@@ -371,7 +383,7 @@ void main() {
                                   (gl_FragCoord.y - (resolution.y - 1.)/2.) * (gl_FragCoord.y - (resolution.y - 1.)/2.));
 	float br = bessel(currentxsigma * radius, 1) / (currentxsigma * radius);
 	if (radius < 1e-1) br = 0.5;
-        ampnew = currentstrength * fourierstrength * 2. * PI * currentxsigma * currentxsigma * br;
+        ampnew = currentstrength * fourierstrength * 2. * br;
       }
       real = real + cos(phasenew) * ampnew;
       imag = imag + sin(phasenew) * ampnew;

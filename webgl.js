@@ -197,8 +197,8 @@ var uvs = [
 ];
 
 var scale;
-var fourierstrength = 6e18;
-var imagestrength = 1.;
+var fourierstrength = 1.;
+var imagestrength = (Math.PI * 2500. * radiansPerPixel * radiansPerPixel);
 var sel = 0;
 
 var redBalance = 0.6;
@@ -1719,7 +1719,7 @@ function main() {
     if (!mouse_dragging) {
       var x = event.clientX - br.left - height/2.;
       var y = event.clientY - br.top - height/2.;
-      if (x < height) {
+      if (x < height/2.) {
         // Use our mouseclick to reposition the active source component
         xes[sel] =   2. * x * radiansPerPixel; // Not quite sure why the scaling factor of 2 needs to be in there...but it works.
         yes[sel] =  -2. * y * radiansPerPixel;
@@ -1746,31 +1746,33 @@ function main() {
   function mouseDown(event) {
     plotInFocus = true;
     var br = canvas.getBoundingClientRect();
-    if (event.which === 1) {
-      console.log("L Mouse down");
-      l_mouse_is_down = true;
-    } else if (event.which === 2) {
-      console.log("M Mouse down");
-    } else if (event.which === 3) {
-      console.log("R Mouse down");
-      r_mouse_is_down = true;
-      // sort out location and PA value
-      var mouse_x = event.clientX - br.left - height/2.;
-      var mouse_y = event.clientY - br.top - height/2.;
-      console.log("mouse x = ", mouse_x, ", mouse y = ", mouse_y);
-      if (xsigmas[sel] >= ysigmas[sel]) {
-        thetas[sel] = Math.atan2(mouse_y, mouse_x);
-      } else {
-        thetas[sel] = Math.atan2(mouse_y, mouse_x) + Math.PI/2.;
+    var mouse_x = event.clientX - br.left - height/2.;
+    var mouse_y = event.clientY - br.top - height/2.;
+    if (mouse_x < height/2.) {
+      if (event.which === 1) {
+        console.log("L Mouse down");
+        l_mouse_is_down = true;
+      } else if (event.which === 2) {
+        console.log("M Mouse down");
+      } else if (event.which === 3) {
+        console.log("R Mouse down");
+        r_mouse_is_down = true;
+        // sort out location and PA value
+        console.log("mouse x = ", mouse_x, ", mouse y = ", mouse_y);
+        if (xsigmas[sel] >= ysigmas[sel]) {
+          thetas[sel] = Math.atan2(mouse_y, mouse_x);
+        } else {
+          thetas[sel] = Math.atan2(mouse_y, mouse_x) + Math.PI/2.;
+        }
+        lc = gl.getUniformLocation(program, "thetas");
+        gl.uniform1fv(lc, thetas);
+        fill_table_from_js();
       }
-      lc = gl.getUniformLocation(program, "thetas");
-      gl.uniform1fv(lc, thetas);
-      fill_table_from_js();
+      mousestart_x = event.clientX - br.left - height/2.;
+      mousestart_y = event.clientY - br.top - height/2.;
+      mouselast_x = mousestart_x;
+      mouselast_y = mousestart_y;
     }
-    mousestart_x = event.clientX - br.left - height/2.;
-    mousestart_y = event.clientY - br.top - height/2.;
-    mouselast_x = mousestart_x;
-    mouselast_y = mousestart_y;
   }
 
   function mouseMove(event) {

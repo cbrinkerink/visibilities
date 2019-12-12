@@ -33,6 +33,7 @@ Things to do:
 <div class="container">
 <canvas id="canvas" width="1200" height="600"></canvas>
 <canvas id="textcanvas" width="1200" height="600"></canvas>
+<p id="modetext">Now in component placement/sizing mode</p>
 </div>
 <button class="collapsible" >Click here to show/hide model components table</button>
 <div id="wrapper" class="content">
@@ -182,10 +183,6 @@ If you have questions, comments or suggestions for improvements and/or functiona
 <p>For a list of all controls, see bottom of page.</p>
 </div>
 <div id="wrapper">
-<p id="modetext">Now in component placement/sizing mode</p>
-<div class="slidecontainer">
-	<input type="range" min="-300" max="300" value="0" class="slider" id="slider1"><p id="slider1output">0</p>
-</div>
 <!-- vertex shader -->
 <script id="2d-vertex-shader" type="x-shader/x-vertex">#version 300 es
 
@@ -234,8 +231,6 @@ uniform int sel;
 uniform float redBalance;
 uniform float greenBalance;
 uniform float blueBalance;
-
-uniform float uvpoints[20];
 
 // test object to check how arrays of vectors work
 uniform vec2 testvec[4];
@@ -395,12 +390,6 @@ void main() {
     blue  = (blueBalance + (1. - blueBalance) * cos(phase + PI + 4./3. * PI)) * amp;
     col = vec4(red, green, blue, 1.);
     fragColor = col;
-    // Check our uv points to see which pixels we want to paint white in the Fourier plane
-    for (int i = 0; i < 10; i++) {
-      float u = (gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * lpp;
-      float v = (gl_FragCoord.y - (resolution.y - 1.)/2.               ) * lpp;
-      if ((u-uvpoints[2*i])*(u-uvpoints[2*i]) + (v-uvpoints[2*i])*(v-uvpoints[2*i]) < 3. * lpp * lpp) fragColor = vec4(1., 1., 1., 1.); // paint pixel white
-    }
   }
   if (gl_FragCoord.y < 1. && gl_FragCoord.x < resolution.y/10. * float(sel+1) && gl_FragCoord.x > resolution.y/10. * float(sel)) {
     fragColor = vec4(0.0, 1.0, 0.0, 1.0);
@@ -462,8 +451,6 @@ uniform int sel;
 uniform float redBalance;
 uniform float greenBalance;
 uniform float blueBalance;
-
-uniform float uvpoints[20];
 
 in vec2 v_texcoord;
 uniform sampler2D uvpoints_info;

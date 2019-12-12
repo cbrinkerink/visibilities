@@ -183,19 +183,6 @@ var strengths = [
   1.,0.,0.,0.,0.,0.,0.,0.,0.,0.
 ];
 
-var uvs = [
-  1e7, 1e7,
-  5e7, 5e7,
-  1e8, 1e8,
-  5e8, 5e8,
-  1e9, 1e9,
-  5e9, 5e9,
-  1e10, 1e10,
-  5e10, 5e10,
-  1e11, 1e11,
-  5e11, 5e11
-];
-
 var scale;
 var fourierstrength = 1.;
 var imagestrength = (Math.PI * 2500. * radiansPerPixel * radiansPerPixel);
@@ -1108,6 +1095,19 @@ function render() {
     ctx.fillText("Max u/v: " + (lambdasPerPixel * height).toFixed(2).toString() + " wavelengths", height + 10, height - 10);
     ctx.fillText("Sky image", 10, 20);
     ctx.fillText("Visibility map", height + 10, 20);
+    // Plot our uv points here too!
+    var tab = document.getElementById("visibilitiestable");
+    //console.log(tab);
+    var rows = tab.rows.length - 1; // remove the header row
+    //console.log(rows);
+    if (rows > 0) {
+      for (var j = 1; j <= rows; j++) {
+        var u = parseFloat(tab.rows[j].cells[1].innerHTML); // u value
+        var v = parseFloat(tab.rows[j].cells[2].innerHTML); // v value
+        ctx.fillRect(height + height/2. + u/lambdasPerPixel, height/2. - v/lambdasPerPixel, 1, 1);
+      }
+    }
+
     // Set time in shader to now
     if (rendering) {
       lc = gl.getUniformLocation(program, "time");
@@ -1671,19 +1671,6 @@ function main() {
 
   currentcounter = 0.;
 
-  // Add functions to deal with web form inputs (buttons, sliders, etc.)
-  var slider1 = document.getElementById("slider1");
-  var slider1output = document.getElementById("slider1output");
-  slider1output.innerHTML = slider1.value; // Display the default slider value
-
-  // Update the current slider value (each time you drag the slider handle)
-  slider1.oninput = function() {
-    slider1output.innerHTML = this.value;
-    xes[0] = this.value * radiansPerPixel;
-    lc = gl.getUniformLocation(program, "xes");
-    gl.uniform1fv(lc, xes);
-  }
-
   // Add key press event listener
   document.body.addEventListener("keydown", keydown, false);
   document.body.addEventListener("keyup", keyup, false);
@@ -1905,9 +1892,6 @@ function main() {
 
   lc = gl.getUniformLocation(program, "blueBalance");
   gl.uniform1f(lc, blueBalance);
-
-  lc = gl.getUniformLocation(program, "uvpoints");
-  gl.uniform1fv(lc, uvs);
 
   // Set our test vector array with some values
   lc = gl.getUniformLocation(program, "testvec");

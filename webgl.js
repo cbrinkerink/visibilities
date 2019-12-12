@@ -80,6 +80,8 @@ var keyMode = 0;
 var canvas, textcanvas, ctx;
 var width;
 var height;
+var scatterChart = null;
+var uvdist = true;
 
 var uvpointsTexture, visibilitiesTexture;
 var calcFrameBuffer;
@@ -350,6 +352,9 @@ function keydown(e) {
       q_pressed = true;
       if (keyMode == 0) {
         sourcetypes[sel] = 1 - sourcetypes[sel];
+        gl.useProgram(calcprogram);
+        lc = gl.getUniformLocation(calcprogram, "sourcetypes");
+        gl.uniform1iv(lc, sourcetypes);
         gl.useProgram(program);
         lc = gl.getUniformLocation(program, "sourcetypes");
         gl.uniform1iv(lc, sourcetypes);
@@ -1432,6 +1437,7 @@ function upload_uvs_from_table() {
     texArray[4 * j + 0] = parseFloat(tab.rows[j+1].cells[1].innerHTML); // u value
     texArray[4 * j + 1] = parseFloat(tab.rows[j+1].cells[2].innerHTML); // v value
     texArray[4 * j + 2] = parseFloat(tab.rows[j+1].cells[3].innerHTML); // time value
+    console.log(texArray[4*j+0], texArray[4*j+1], texArray[4*j+2]);
   }
   // Upload this array as a texture to the calc shader and have it calculate the corresponding visibilities.
   gl.useProgram(calcprogram);
@@ -1476,6 +1482,11 @@ function add_row_to_visibilitiestable() {
   cell3.innerHTML = "0.";
   cell4.innerHTML = "0.";
   cell7.innerHTML = "<button class=\"button\" onclick=\"remove_uvpoint_from_table(this)\" >Remove</button>";
+}
+
+function toggle_uvdist_time() {
+  uvdist = !uvdist;
+  upload_uvs_from_table();
 }
 
 function calcVisibilities(gl, texArray, xlen, ylen) {
@@ -1529,12 +1540,79 @@ function calcVisibilities(gl, texArray, xlen, ylen) {
 
   var tab = document.getElementById("visibilitiestable");
   var rows = tab.rows.length - 1; // remove the header row
+  var ampchartdata = [];
+  var phasechartdata = [];
   for (var j = 0; j < rows; j++) {
     tab.rows[j+1].cells[4].innerHTML = ph[4 * j + 0].toPrecision(4); // amplitude
     tab.rows[j+1].cells[5].innerHTML = ph[4 * j + 1].toPrecision(4); // phase
+    var uval = parseFloat(tab.rows[j+1].cells[1].innerHTML);
+    var vval = parseFloat(tab.rows[j+1].cells[2].innerHTML);
+    var tval = parseFloat(tab.rows[j+1].cells[3].innerHTML);
+    var aval = parseFloat(tab.rows[j+1].cells[4].innerHTML);
+    var pval = parseFloat(tab.rows[j+1].cells[5].innerHTML);
+    if (uvdist) {
+      ampchartdata.push({x: Math.sqrt(uval * uval + vval * vval),y: aval});
+      phasechartdata.push({x: Math.sqrt(uval * uval + vval * vval),y: pval});
+    } else {
+      ampchartdata.push({x: tval, y: aval});
+      phasechartdata.push({x: tval, y: pval});
+    }
   }
 
   // - Plot visibility measurements in separate canvas
+  var ctx = document.getElementById('viscanvas');
+  if (scatterChart != null) scatterChart.destroy();
+  scatterChart = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+        datasets: [{
+            label: 'Visibility amplitude',
+            data: ampchartdata,
+	    backgroundColor: 'rgba(255, 0, 0, 1.0)',
+	    yAxisID: 'amp-axis'
+	},{
+            label: 'Visibility phase',
+            data: phasechartdata,
+	    backgroundColor: 'rgba(0, 0, 255, 1.0)',
+	    yAxisID: 'phase-axis'
+	}]
+    },
+    options: {
+	responsive: false,
+	stacked: false,
+        scales: {
+            xAxes: [{
+                type: 'linear',
+                position: 'bottom',
+		scaleLabel: {
+		    display: true,
+		    labelString: "UV distance (lambdas)"
+		}
+            }],
+            yAxes: [{
+                type: 'linear',
+		scaleLabel: {
+		    display: true,
+		    labelString: "Amplitude (Jy)"
+		},
+		id: 'amp-axis',
+		position: 'left'
+            },{
+                type: 'linear',
+		scaleLabel: {
+		    display: true,
+		    labelString: "Phase (rad)"
+		},
+		id: 'phase-axis',
+		position: 'right',
+		gridLines: {
+		    drawOnChartArea: false
+		}
+	    }]
+        }
+    }
+  });
+  scatterChart.resize(1200,600);
 
   console.log("Switching back to screenbuffer...");
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -1543,9 +1621,43 @@ function calcVisibilities(gl, texArray, xlen, ylen) {
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 }
 
+function interpolate_uvpoints() {
+  var tab = document.getElementById("visibilitiestable");
+  console.log(tab);
+  var rows = tab.rows.length - 1; // remove the header row
+  var startu = parseFloat(tab.rows[1].cells[1].innerHTML);
+  var startv = parseFloat(tab.rows[1].cells[2].innerHTML);
+  var startt = parseFloat(tab.rows[1].cells[3].innerHTML);
+  console.log("start nums", startu, startv, startt);
+  var endu = parseFloat(tab.rows[rows].cells[1].innerHTML);
+  var endv = parseFloat(tab.rows[rows].cells[2].innerHTML);
+  var endt = parseFloat(tab.rows[rows].cells[3].innerHTML);
+  console.log("end nums", endu, endv, endt);
+  for (var j = 2; j < rows; j++) {
+    tab.rows[j].cells[1].innerHTML = (startu + (endu - startu) * (j-1)/(rows-1)).toPrecision(4);
+    tab.rows[j].cells[2].innerHTML = (startv + (endv - startv) * (j-1)/(rows-1)).toPrecision(4);
+    tab.rows[j].cells[3].innerHTML = (startt + (endt - startt) * (j-1)/(rows-1)).toPrecision(4);
+  }
+}
+
 function main() {
   // Populate our HTML table with source component parameter values
   fill_table_from_js();
+
+  // Hide our tables by default!
+  var coll = document.getElementsByClassName("collapsible");
+  
+  for (var i = 0; i < coll.length; i++) {
+    coll[i].addEventListener("click", function() {
+      this.classList.toggle("active");
+      var content = this.nextElementSibling;
+      if (content.style.display === "inline") {
+        content.style.display = "none";
+      } else {
+        content.style.display = "inline";
+      }
+    });
+  }
   //initialize_visibilities_table();
   console.log("Starting!");
   canvas = document.getElementById('canvas');

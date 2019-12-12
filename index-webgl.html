@@ -24,7 +24,8 @@ Things to do:
 <canvas id="canvas" width="1200" height="600"></canvas>
 <canvas id="textcanvas" width="1200" height="600"></canvas>
 </div>
-<div id="wrapper">
+<button class="collapsible" >Click here to show/hide model components table</button>
+<div id="wrapper" class="content">
 <br>
 <table id="componenttable" class="comptable">
   <tr>
@@ -129,6 +130,10 @@ Things to do:
   </tr>
 </table>
 <br>
+</div>
+<br>
+<button class="collapsible" >Click here to show/hide uv-points table</button>
+<div id="wrapper" class="content">
 <table id="visibilitiestable" class="vistable">
   <tr>
     <th>Point index</th>
@@ -137,7 +142,7 @@ Things to do:
     <th>Time</th>
     <th>Amp</th>
     <th>Phase</th>
-    <th><button class="button" onclick="upload_uvs_from_table()" text-align="center">Calculate<br>all<br>visibilities</button><br><br><button class="button" onclick="add_row_to_visibilitiestable()" text-align="center">Add uv-point</button></th>
+    <th><button class="button" onclick="upload_uvs_from_table()" text-align="center">Calculate<br>all<br>visibilities</button><br><br><button class="button" onclick="add_row_to_visibilitiestable()" text-align="center">Add<br>uv-point</button><br><br><button class="button" onclick="interpolate_uvpoints()" text-align="center">Interpolate<br>uv values</button></th>
   </tr>
   <tr id="uv-row-1">
     <td>1</td>
@@ -151,6 +156,10 @@ Things to do:
 
 </table>
 </div>
+<button class="collapsible" >Click here to show/hide visibility plot area</button>
+<canvas id="viscanvas" width="1200" height="600" class="content" style="min-width: 1200px; max-width: 1200px; min-height: 600px; max-height: 600px" ></canvas>
+<br>
+<button class="button" onclick="toggle_uvdist_time()">Toggle between uvdistance / time on x-axis</button>
 <div id="wrapper">
 <p>Above, we show an interactive canvas with a sky image of some hypothetical radio source on the left, consisting of up to 10 separate source components. On the right, the colourful area shows the interferometric visibility map that corresponds to the sky image on the left. Source image components can be added, edited or removed to see what effect they have on the visibility map. If you're starting out, try to move the single source component around by using the arrow keys, and see how the phases of the visibilities get affected.</p>
 
@@ -540,13 +549,15 @@ void main() {
       phasenew = mod(phasenew, 2. * PI);
       float radius = sqrt(ucoord * ucoord + vcoord * vcoord);
       float br = bessel(currentxsigma * radius, 1) / (currentxsigma * radius);
+      //float br = bessel(3.2, 1) / (3.2);
       if (radius < 1e-1) br = 0.5;
-      ampnew = currentstrength * fourierstrength * 2. * PI * currentxsigma * currentxsigma * br;
+      ampnew = currentstrength * 2. * br;
     }
     real = real + cos(phasenew) * ampnew;
     imag = imag + sin(phasenew) * ampnew;
   }
   float phase = atan(imag, real);
+  if (imag == 0. && real == 0.) phase = 0.;
   float amp = sqrt(real*real + imag*imag);
 
   // Output the calculate amplitude and phase into the pixel colour, along with the time (we have 4x float32 space per pixel)
@@ -555,7 +566,7 @@ void main() {
   //fragColor = vec4(ucoord, vcoord, time, 1.); // For testing only
 }
 </script>
-
+<script src="Chart.bundle.js"></script>
 <script src="webgl.js"></script>
 
 <div id="controls">

@@ -34,6 +34,9 @@ Things to do:
 <canvas id="canvas" width="1200" height="600"></canvas>
 <canvas id="textcanvas" width="1200" height="600"></canvas>
 <p id="modetext">Now in component placement/sizing mode</p>
+<button class="button" onclick="upload_uvs_from_table()" text-align="center">Calculate<br>all visibilities</button>
+<button class="button" onclick="add_row_to_visibilitiestable()" text-align="center">Add<br>uv-point</button>
+<button class="button" onclick="interpolate_uvpoints()" text-align="center">Interpolate<br>uv values</button>
 </div>
 <button class="collapsible" >Click here to show/hide model components table</button>
 <div id="wrapper" class="content">
@@ -153,7 +156,7 @@ Things to do:
     <th>Time</th>
     <th>Amp</th>
     <th>Phase</th>
-    <th><button class="button" onclick="upload_uvs_from_table()" text-align="center">Calculate<br>all<br>visibilities</button><br><br><button class="button" onclick="add_row_to_visibilitiestable()" text-align="center">Add<br>uv-point</button><br><br><button class="button" onclick="interpolate_uvpoints()" text-align="center">Interpolate<br>uv values</button></th>
+    <th></th>
   </tr>
   <tr id="uv-row-1">
     <td>1</td>
@@ -358,21 +361,23 @@ void main() {
       float currentxsigma = xsigmas[i] + vps[18*i+9] * sin(time * 2. * PI/ vps[18*i+10] + vps[18*i+11]);
       float currentysigma = ysigmas[i] + vps[18*i+12] * sin(time * 2. * PI/ vps[18*i+13] + vps[18*i+14]);
       float currenttheta = thetas[i] + vps[18*i+15] * sin(time * 2. * PI/ vps[18*i+16] + vps[18*i+17]);
-      if (sourcetypes[i] == 0) { // Gaussian
+      if (sourcetypes[i] == 0) {
+        // Gaussian
         float sigma_x = PI * PI / (currentxsigma * lpp);
         float sigma_y = PI * PI / (currentysigma * lpp);
         float a = cos(currenttheta) * cos(currenttheta) / (2. * sigma_x * sigma_x) + sin(currenttheta) * sin(currenttheta) / (2. * sigma_y * sigma_y);
         float b = -sin(2. * currenttheta) / (4. * sigma_x * sigma_x) + sin(2. * currenttheta) / (4. * sigma_y * sigma_y);
         float c = sin(currenttheta) * sin(currenttheta) / (2. * sigma_x * sigma_x) + cos(currenttheta) * cos(currenttheta) / (2. * sigma_y * sigma_y);
-        phasenew = -PI * ((gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * lpp * posx + 
-                          (gl_FragCoord.y - (resolution.y - 1.)/2.               ) * lpp * posy);
+	// Fixed phase factor (lambdas / 2pi)
+        phasenew = ((gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * lpp * posx + 
+                    (gl_FragCoord.y - (resolution.y - 1.)/2.               ) * lpp * posy) / (2. * PI);
         phasenew = mod(phasenew, 2. * PI);
-        // Gaussian source type
-        // Properly caled version: only the total image flux density is used for scaling (integrated flux density should be value at origin)
         ampnew = fourierstrength * currentstrength * exp(-(a * (gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y)*(gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) + 2. * b * (gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * (gl_FragCoord.y - (resolution.y - 1.)/2.) + c * (gl_FragCoord.y - (resolution.y - 1.)/2.) * (gl_FragCoord.y - (resolution.y - 1.)/2.)));
-      } else if (sourcetypes[i] == 1) { // Disk
-        phasenew = -PI * ((gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * lpp * posx + 
-                          (gl_FragCoord.y - (resolution.y - 1.)/2.               ) * lpp * posy);
+      } else if (sourcetypes[i] == 1) {
+        // Disk
+	// Fixed phase factor (lambdas / 2pi)
+        phasenew = ((gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * lpp * posx + 
+                    (gl_FragCoord.y - (resolution.y - 1.)/2.               ) * lpp * posy) / (2. * PI);
         phasenew = mod(phasenew, 2. * PI);
         float radius = lpp * sqrt((gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) * (gl_FragCoord.x - (resolution.y - 1.)/2. - resolution.y) + 
                                   (gl_FragCoord.y - (resolution.y - 1.)/2.) * (gl_FragCoord.y - (resolution.y - 1.)/2.));
@@ -536,7 +541,8 @@ void main() {
       float a = cos(currenttheta) * cos(currenttheta) / (2. * sigma_x * sigma_x) + sin(currenttheta) * sin(currenttheta) / (2. * sigma_y * sigma_y);
       float b = -sin(2. * currenttheta) / (4. * sigma_x * sigma_x) + sin(2. * currenttheta) / (4. * sigma_y * sigma_y);
       float c = sin(currenttheta) * sin(currenttheta) / (2. * sigma_x * sigma_x) + cos(currenttheta) * cos(currenttheta) / (2. * sigma_y * sigma_y);
-      phasenew = -PI * (ucoord * posx + vcoord * posy);
+      // Fixed phase factor (lambdas / 2pi)
+      phasenew = (ucoord * posx + vcoord * posy) / (2. * PI);
       phasenew = mod(phasenew, 2. * PI);
       // Gaussian source type
       // Note tht we likely should not invoke any display scaling here.
@@ -544,7 +550,8 @@ void main() {
       //ampnew = (PI * (currentxsigma * currentysigma) * currentstrength * exp(-(a * ucoord * ucoord + 2. * b * ucoord * vcoord + c * vcoord * vcoord)));
       ampnew = (currentstrength * exp(-(a * ucoord * ucoord + 2. * b * ucoord * vcoord + c * vcoord * vcoord)));
     } else if (sourcetypes[i] == 1) { // Disk
-      phasenew = -PI * (ucoord * posx + vcoord * posy);
+      // Fixed phase factor (lambdas / 2pi)
+      phasenew = (ucoord * posx + vcoord * posy) / (2. * PI);
       phasenew = mod(phasenew, 2. * PI);
       float radius = sqrt(ucoord * ucoord + vcoord * vcoord);
       float br = bessel(currentxsigma * radius, 1) / (currentxsigma * radius);
